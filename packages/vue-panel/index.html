@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vue Preview - Artifactuse</title>
+  
+  <!-- Vue 3 from CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      padding: 16px;
+      min-height: 100vh;
+    }
+    #app { min-height: 100px; }
+    .error {
+      color: #dc2626;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: 'SF Mono', Monaco, monospace;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
+    .error-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"><div class="loading">Loading...</div></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

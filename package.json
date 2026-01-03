@@ -1,0 +1,37 @@
+{
+  "name": "artifactuse-panels",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Panel artifacts for Artifactuse SDK",
+  "packageManager": "npm@10.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:json": "npm run dev --workspace=@artifactuse/json-panel",
+    "dev:svg": "npm run dev --workspace=@artifactuse/svg-panel",
+    "dev:diff": "npm run dev --workspace=@artifactuse/diff-panel",
+    "dev:html": "npm run dev --workspace=@artifactuse/html-panel",
+    "dev:react": "npm run dev --workspace=@artifactuse/react-panel",
+    "dev:vue": "npm run dev --workspace=@artifactuse/vue-panel",
+    "dev:form": "npm run dev --workspace=@artifactuse/form-panel",
+    "build": "turbo run build",
+    "build:json": "turbo run build --filter=@artifactuse/json-panel",
+    "build:svg": "turbo run build --filter=@artifactuse/svg-panel",
+    "build:diff": "turbo run build --filter=@artifactuse/diff-panel",
+    "build:html": "turbo run build --filter=@artifactuse/html-panel",
+    "build:react": "turbo run build --filter=@artifactuse/react-panel",
+    "build:vue": "turbo run build --filter=@artifactuse/vue-panel",
+    "build:form": "turbo run build --filter=@artifactuse/form-panel",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "deploy": "npm run build && ./scripts/deploy.sh"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

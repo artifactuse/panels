@@ -1,0 +1,19 @@
+name = "artifactuse-panels"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[assets]
+directory = "./dist"
+
+[dev]
+port = 8787
+
+# Staging
+[env.staging]
+name = "artifactuse-panels-staging"
+
+# Production
+[env.production]
+name = "artifactuse-panels"
+# Uncomment and update for custom domain:
+# routes = [{ pattern = "panels.yourdomain.com/*", zone_name = "yourdomain.com" }]

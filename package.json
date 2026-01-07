@@ -26,10 +26,15 @@
     "build:form": "turbo run build --filter=@artifactuse/form-panel",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
-    "deploy": "npm run build && ./scripts/deploy.sh"
+    "deploy:aws": "./scripts/deploy.sh",
+    "deploy:cf": "./scripts/deploy-cloudflare.sh",
+    "deploy:cf:staging": "ENVIRONMENT=staging ./scripts/deploy-cloudflare.sh",
+    "cf:dev": "npm run build && cd worker && wrangler dev",
+    "cf:tail": "cd worker && wrangler tail"
   },
   "devDependencies": {
-    "turbo": "^2.0.0"
+    "turbo": "^2.0.0",
+    "wrangler": "^3.80.0"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -39,6 +39,12 @@ for panel in json-panel svg-panel diff-panel html-panel react-panel vue-panel fo
   fi
 done
 
+# Copy worker public files (favicon, etc.)
+if [ -d "worker/public" ]; then
+  cp -r worker/public/* worker/dist/
+  echo "   ✓ public files"
+fi
+
 # Deploy
 echo ""
 echo "☁️  Deploying..."

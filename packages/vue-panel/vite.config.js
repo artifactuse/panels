@@ -1,11 +1,12 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  server: {
-    port: 5180
-  },
+  base: './',
   build: {
     outDir: 'dist',
     emptyOutDir: true
+  },
+  server: {
+    port: 5180
   }
 });

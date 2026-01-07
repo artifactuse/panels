@@ -12,6 +12,7 @@ bin/
 .turbo/
 dist/
 build/
+.wrangler/
 .cache/
 .next/
 .out/

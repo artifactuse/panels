@@ -1,0 +1,23 @@
+.wranglerignore# macOS
+.DS_Store
+
+# Source maps
+*.map
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Node
+node_modules/
+
+# Editor
+*.swp
+*.swo
+*~
+
+# Thumbnails
+Thumbs.db

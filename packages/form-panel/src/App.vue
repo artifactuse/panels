@@ -79,6 +79,9 @@
             {{ formData.submitLabel || 'Submit' }}
           </button>
         </div>
+        <div class="h-10">
+          &nbsp;
+        </div>
       </form>
     </div>
     
@@ -280,21 +283,51 @@ onMounted(() => {
   }
   
   // Dev mode mock data
-  if (!formData.data?.fields?.length && !formData.data?.steps?.length) {
-    if (import.meta.env?.DEV || window.location.hostname === 'localhost') {
-      import('@artifactuse/shared').then(mod => {
-        if (mod.getMockData) {
-          loadFormData(mod.getMockData('form'));
-          console.log('[Form Panel] Loaded mock data');
-        }
-      }).catch(() => {});
-    }
-  }
+  // if (!formData.data?.fields?.length && !formData.data?.steps?.length) {
+  //   if (import.meta.env?.DEV || window.location.hostname === 'localhost') {
+  //     import('@artifactuse/shared').then(mod => {
+  //       if (mod.getMockData) {
+  //         loadFormData(mod.getMockData('form'));
+  //         console.log('[Form Panel] Loaded mock data');
+  //       }
+  //     }).catch(() => {});
+  //   }
+  // }
   
   if (props.data && Object.keys(props.data).length) loadFormData(props.data);
   if (props.accent) applyAccent(props.accent);
   
   bridge = createBridge({ debug: import.meta.env?.DEV });
+
+  // Handle artifact loading
+  bridge.on('load:artifact', (artifact) => {
+    console.log('Loading artifact:', artifact);
+    
+    // Only handle form artifacts
+    if (artifact.language !== 'form' && artifact.type !== 'form') {
+      console.warn('Unsupported artifact type:', artifact.language || artifact.type);
+      return;
+    }
+    
+    try {
+      // Sanitize: Fix unescaped newlines inside JSON string values
+      let code = artifact.code;
+      code = code.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
+        return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+      });
+      
+      const formConfig = JSON.parse(code);
+      
+      // Load the form data
+      loadFormData(formConfig);
+      
+      console.log('Form artifact loaded successfully');
+      
+    } catch (e) {
+      console.error('Failed to parse form artifact:', e);
+    }
+  });
+  
   bridge.on('setData', loadFormData);
   bridge.on('setTheme', (t) => { currentTheme.value = typeof t === 'string' ? t : t.theme; });
   bridge.on('setAccent', applyAccent);

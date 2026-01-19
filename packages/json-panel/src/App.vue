@@ -198,19 +198,45 @@ onMounted(() => {
   if (urlAccent) { setAccentColor(urlAccent); currentAccent.value = urlAccent; }
   if (params.get('json')) rawJson.value = decodeURIComponent(params.get('json'));
   
-  if (!rawJson.value && (import.meta.env?.DEV || window.location.hostname === 'localhost')) {
-    import('@artifactuse/shared').then(mod => {
-      if (mod.getMockData) {
-        rawJson.value = JSON.stringify(mod.getMockData('json'));
-        parseJson(rawJson.value);
-        console.log('[JSON Viewer] Loaded mock data');
-      }
-    }).catch(() => {});
-  }
+  // if (!rawJson.value && (import.meta.env?.DEV || window.location.hostname === 'localhost')) {
+  //   import('@artifactuse/shared').then(mod => {
+  //     if (mod.getMockData) {
+  //       rawJson.value = JSON.stringify(mod.getMockData('json'));
+  //       parseJson(rawJson.value);
+  //       console.log('[JSON Viewer] Loaded mock data');
+  //     }
+  //   }).catch(() => {});
+  // }
   
   if (rawJson.value) parseJson(rawJson.value);
   
   bridge = createBridge({ debug: import.meta.env?.DEV });
+  
+  // Handle artifact loading
+  bridge.on('load:artifact', (artifact) => {
+    console.log('Loading artifact:', artifact);
+    
+    // Handle json artifacts
+    const lang = artifact.language?.toLowerCase();
+    if (lang !== 'json') {
+      console.warn('Unsupported artifact language:', artifact.language);
+      return;
+    }
+    
+    // For JSON viewer, the code IS the JSON to display
+    // We need to sanitize newlines inside string values before parsing
+    let code = artifact.code || '';
+    code = code.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
+      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+    });
+    
+    rawJson.value = code;
+    parseJson(code);
+    
+    console.log('JSON artifact loaded');
+  });
+  
+  // Legacy setJson handler
   bridge.on('setJson', (data) => { rawJson.value = data; parseJson(data); });
   bridge.on('setTheme', (t) => { currentTheme.value = typeof t === 'string' ? t : t.theme; });
   bridge.on('setAccent', (a) => { setAccentColor(a); currentAccent.value = a; });

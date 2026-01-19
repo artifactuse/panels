@@ -209,32 +209,48 @@ function handleLinkClick(e) {
  */
 function init() {
   // Set up bridge communication
-  bridge = createBridge({
-    onMessage: (msg) => {
-      if (msg.type === 'setCode' || msg.action === 'setContent') {
-        currentCode = msg.data?.code || msg.data?.content || '';
-        renderVue(currentCode);
-      }
+  bridge = createBridge({ debug: window.location.hostname === 'localhost' });
+  
+  // Handle artifact loading
+  bridge.on('load:artifact', (artifact) => {
+    console.log('Loading artifact:', artifact);
+    
+    // Handle vue artifacts
+    const lang = artifact.language?.toLowerCase();
+    if (lang !== 'vue') {
+      console.warn('Unsupported artifact language:', artifact.language);
+      return;
     }
+    
+    // For Vue, the code is the SFC content directly (no JSON parsing needed)
+    currentCode = artifact.code || '';
+    renderVue(currentCode);
+    
+    console.log('Vue artifact loaded');
   });
   
-  // Signal ready
-  bridge.send({ type: 'ready' });
+  // Also support legacy setCode messages
+  bridge.on('setCode', (data) => {
+    currentCode = data?.code || '';
+    renderVue(currentCode);
+  });
+  
+  bridge.signalReady();
   
   // Dev mode: load mock data if no data provided
-  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  if (isDev && !currentCode) {
-    import('@artifactuse/shared').then((mod) => {
-      if (mod.getMockData) {
-        const mockVue = mod.getMockData('vue');
-        if (mockVue) {
-          currentCode = mockVue;
-          renderVue(currentCode);
-          console.log('[Vue Preview] Loaded mock data for development');
-        }
-      }
-    }).catch(() => {});
-  }
+  // const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  // if (isDev && !currentCode) {
+  //   import('@artifactuse/shared').then((mod) => {
+  //     if (mod.getMockData) {
+  //       const mockVue = mod.getMockData('vue');
+  //       if (mockVue) {
+  //         currentCode = mockVue;
+  //         renderVue(currentCode);
+  //         console.log('[Vue Preview] Loaded mock data for development');
+  //       }
+  //     }
+  //   }).catch(() => {});
+  // }
   
   // Handle link clicks
   document.addEventListener('click', handleLinkClick);

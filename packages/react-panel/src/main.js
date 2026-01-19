@@ -159,32 +159,48 @@ function handleLinkClick(e) {
  */
 function init() {
   // Set up bridge communication
-  bridge = createBridge({
-    onMessage: (msg) => {
-      if (msg.type === 'setCode' || msg.action === 'setContent') {
-        currentCode = msg.data?.code || msg.data?.content || '';
-        renderJsx(currentCode);
-      }
+  bridge = createBridge({ debug: window.location.hostname === 'localhost' });
+  
+  // Handle artifact loading
+  bridge.on('load:artifact', (artifact) => {
+    console.log('Loading artifact:', artifact);
+    
+    // Handle react/jsx artifacts
+    const lang = artifact.language?.toLowerCase();
+    if (lang !== 'react' && lang !== 'jsx') {
+      console.warn('Unsupported artifact language:', artifact.language);
+      return;
     }
+    
+    // For React, the code is the JSX content directly (no JSON parsing needed)
+    currentCode = artifact.code || '';
+    renderJsx(currentCode);
+    
+    console.log('React artifact loaded');
   });
   
-  // Signal ready
-  bridge.send({ type: 'ready' });
+  // Also support legacy setCode/setContent messages
+  bridge.on('setCode', (data) => {
+    currentCode = data?.code || data?.content || '';
+    renderJsx(currentCode);
+  });
+
+  bridge.signalReady();
   
   // Dev mode: load mock data if no data provided
-  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  if (isDev && !currentCode) {
-    import('@artifactuse/shared').then((mod) => {
-      if (mod.getMockData) {
-        const mockReact = mod.getMockData('react');
-        if (mockReact) {
-          currentCode = mockReact;
-          renderJsx(currentCode);
-          console.log('[React Preview] Loaded mock data for development');
-        }
-      }
-    }).catch(() => {});
-  }
+  // const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  // if (isDev && !currentCode) {
+  //   import('@artifactuse/shared').then((mod) => {
+  //     if (mod.getMockData) {
+  //       const mockReact = mod.getMockData('react');
+  //       if (mockReact) {
+  //         currentCode = mockReact;
+  //         renderJsx(currentCode);
+  //         console.log('[React Preview] Loaded mock data for development');
+  //       }
+  //     }
+  //   }).catch(() => {});
+  // }
   
   // Handle link clicks
   document.addEventListener('click', handleLinkClick);

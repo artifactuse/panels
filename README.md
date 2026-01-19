@@ -170,7 +170,23 @@ Interactive form panel with multiple variants, field types, and validation.
 - Success overlay on submit
 - Full theme customization
 
-**Usage:**
+**Artifact Loading:**
+```javascript
+// SDK automatically sends this when opening a form artifact
+// artifact.language = 'form'
+// artifact.code = JSON string with form configuration
+{
+  "title": "Contact Us",
+  "variant": "fields",
+  "data": {
+    "fields": [
+      { "name": "email", "type": "email", "label": "Email", "required": true }
+    ]
+  }
+}
+```
+
+**Legacy Usage:**
 ```javascript
 // Form data structure
 const formData = {
@@ -216,7 +232,14 @@ Interactive JSON tree viewer with Tailwind CSS.
 - Node statistics
 - Theme customization
 
-**Usage:**
+**Artifact Loading:**
+```javascript
+// SDK automatically sends this when opening a JSON artifact
+// artifact.language = 'json'
+// artifact.code = the JSON string to display
+```
+
+**Legacy Usage:**
 ```javascript
 iframe.contentWindow.postMessage({
   type: 'setJson',
@@ -236,7 +259,14 @@ SVG preview with pan, zoom, and export.
 - Copy SVG code
 - Theme customization
 
-**Usage:**
+**Artifact Loading:**
+```javascript
+// SDK automatically sends this when opening an SVG artifact
+// artifact.language = 'svg'
+// artifact.code = raw SVG markup
+```
+
+**Legacy Usage:**
 ```javascript
 iframe.contentWindow.postMessage({
   type: 'setSvg',
@@ -256,7 +286,19 @@ Side-by-side and unified diff comparison.
 - Change statistics
 - Theme customization
 
-**Usage:**
+**Artifact Loading:**
+```javascript
+// SDK automatically sends this when opening a diff artifact
+// artifact.language = 'diff'
+// artifact.code = JSON string with oldCode, newCode, language
+{
+  "oldCode": "original text",
+  "newCode": "modified text",
+  "language": "javascript"
+}
+```
+
+**Legacy Usage:**
 ```javascript
 iframe.contentWindow.postMessage({
   type: 'setDiff',
@@ -264,6 +306,91 @@ iframe.contentWindow.postMessage({
     oldCode: 'original text',
     newCode: 'modified text'
   }
+}, '*');
+```
+
+### @artifactuse/html-panel
+
+HTML and Markdown preview.
+
+**Features:**
+- Raw HTML rendering
+- Markdown parsing (headers, lists, code blocks, links, images, etc.)
+- Syntax highlighting for code blocks
+- Link handling (opens in new tab)
+- Theme customization
+
+**Artifact Loading:**
+```javascript
+// SDK automatically sends this when opening an HTML/Markdown artifact
+// artifact.language = 'html' | 'markdown' | 'md'
+// artifact.code = raw HTML or Markdown content
+```
+
+**Legacy Usage:**
+```javascript
+iframe.contentWindow.postMessage({
+  type: 'setCode',
+  data: {
+    code: '<h1>Hello World</h1>',
+    language: 'html'  // or 'markdown'
+  }
+}, '*');
+```
+
+### @artifactuse/react-panel
+
+React/JSX preview with live rendering.
+
+**Features:**
+- JSX transformation via Babel
+- React hooks support (useState, useEffect, etc.)
+- Component auto-detection and mounting
+- Error display
+- Theme customization
+
+**Artifact Loading:**
+```javascript
+// SDK automatically sends this when opening a React artifact
+// artifact.language = 'react' | 'jsx'
+// artifact.code = raw JSX/React code
+```
+
+**Legacy Usage:**
+```javascript
+iframe.contentWindow.postMessage({
+  type: 'setCode',
+  data: {
+    code: 'function App() { return <h1>Hello</h1>; }',
+    language: 'react'
+  }
+}, '*');
+```
+
+### @artifactuse/vue-panel
+
+Vue SFC preview with live rendering.
+
+**Features:**
+- Vue 3 SFC parsing (template, script, style)
+- Composition API support
+- Options API support
+- Scoped styles
+- Error display
+- Theme customization
+
+**Artifact Loading:**
+```javascript
+// SDK automatically sends this when opening a Vue artifact
+// artifact.language = 'vue'
+// artifact.code = raw Vue SFC code
+```
+
+**Legacy Usage:**
+```javascript
+iframe.contentWindow.postMessage({
+  type: 'setCode',
+  data: '<template><h1>Hello</h1></template>'
 }, '*');
 ```
 
@@ -278,11 +405,21 @@ import { createBridge } from '@artifactuse/shared/bridge';
 
 const bridge = createBridge({ debug: true });
 
+// Listen for artifact loading (primary method)
+bridge.on('load:artifact', (artifact) => {
+  console.log('Artifact loaded:', artifact);
+  // Handle artifact.code based on artifact.language
+});
+
+// Listen for other events
 bridge.on('setData', (data) => {
   // Handle incoming data
 });
 
+// Send events to parent
 bridge.send('form:submit', { formId, values });
+
+// Signal panel is ready
 bridge.signalReady();
 ```
 
@@ -307,6 +444,89 @@ parseColor('rgb(255, 100, 50)');  // Returns '255 100 50'
 
 // Detect theme from URL or system preference
 const theme = detectTheme();  // 'dark' or 'light'
+```
+
+## 🔌 Communication Protocol
+
+### Artifact Loading (SDK → Panel)
+
+When the SDK opens a panel artifact, it sends a `load:artifact` message via the bridge. This is the **primary method** for loading content into panels.
+
+```javascript
+// SDK sends this when opening a panel artifact
+{
+  type: 'artifactuse',
+  action: 'load:artifact',
+  data: {
+    id: 'artifact-id',
+    messageId: 'message-id',
+    type: 'code',              // or 'form'
+    language: 'json',          // panel-specific language identifier
+    title: 'Artifact Title',
+    code: '...',               // The artifact content (JSON string or raw code)
+    isInline: false,
+    isPreviewable: true,
+    isPanelArtifact: true,
+    createdAt: '2026-01-19T10:24:25.650Z'
+  }
+}
+```
+
+### Artifact Code Formats by Panel
+
+| Panel | Language Values | Code Format | Needs JSON Parse |
+|-------|-----------------|-------------|------------------|
+| `form-panel` | `form` | JSON: form configuration | ✅ Yes |
+| `json-panel` | `json` | JSON: the data to display | ✅ Yes |
+| `diff-panel` | `diff` | JSON: `{oldCode, newCode, language}` | ✅ Yes |
+| `svg-panel` | `svg` | Raw SVG markup | ❌ No |
+| `html-panel` | `html`, `markdown`, `md` | Raw HTML or Markdown | ❌ No |
+| `react-panel` | `react`, `jsx` | Raw JSX/React code | ❌ No |
+| `vue-panel` | `vue` | Raw Vue SFC code | ❌ No |
+
+### Legacy Messages (Parent → Panel)
+
+These messages are still supported for backwards compatibility:
+
+```javascript
+// Set content
+iframe.contentWindow.postMessage({
+  type: 'setData',  // or setJson, setSvg, setDiff, setCode
+  data: { ... }
+}, '*');
+
+// Set theme
+iframe.contentWindow.postMessage({
+  type: 'setTheme',
+  data: 'light'
+}, '*');
+
+// Set accent color
+iframe.contentWindow.postMessage({
+  type: 'setAccent',
+  data: '#ff6432'
+}, '*');
+```
+
+### Panel → Parent
+
+```javascript
+// Panel ready
+{ type: 'artifactuse', action: 'panel:ready', data: { timestamp } }
+
+// Form submitted
+{ 
+  type: 'artifactuse',
+  action: 'form:submit', 
+  data: { formId, action, values, timestamp } 
+}
+
+// Form cancelled
+{ 
+  type: 'artifactuse',
+  action: 'form:cancel', 
+  data: { formId, action, timestamp } 
+}
 ```
 
 ## 🎨 Theme Customization
@@ -392,51 +612,6 @@ The theme system uses CSS variables that you can override:
 }
 ```
 
-## 🔌 Communication Protocol
-
-### Parent → Panel
-
-```javascript
-// Set content
-iframe.contentWindow.postMessage({
-  type: 'setData',  // or setJson, setSvg, setDiff, setCode
-  data: { ... }
-}, '*');
-
-// Set theme
-iframe.contentWindow.postMessage({
-  type: 'setTheme',
-  data: 'light'
-}, '*');
-
-// Set accent color
-iframe.contentWindow.postMessage({
-  type: 'setAccent',
-  data: '#ff6432'
-}, '*');
-```
-
-### Panel → Parent
-
-```javascript
-// Panel ready
-{ type: 'ready' }
-
-// Form submitted
-{ 
-  type: 'artifactuse',
-  action: 'form:submit', 
-  data: { formId, action, values, timestamp } 
-}
-
-// Form cancelled
-{ 
-  type: 'artifactuse',
-  action: 'form:cancel', 
-  data: { formId, action, timestamp } 
-}
-```
-
 ## 🎨 Content Type Routing
 
 | Content Type | Package | Dev Port | CDN Path | Tier |
@@ -444,11 +619,73 @@ iframe.contentWindow.postMessage({
 | JSON | `@artifactuse/json-panel` | 5173 | `/json-panel/` | 🆓 |
 | SVG | `@artifactuse/svg-panel` | 5174 | `/svg-panel/` | 🆓 |
 | Diff / Patch | `@artifactuse/diff-panel` | 5175 | `/diff-panel/` | 🆓 |
-| JavaScript / Python | `@artifactuse/code-panel` | 5176 | `/code-panel/` | ⭐ Pro |
 | HTML / Markdown | `@artifactuse/html-panel` | 5177 | `/html-panel/` | 🆓 |
 | React / JSX | `@artifactuse/react-panel` | 5178 | `/react-panel/` | 🆓 |
 | Vue SFC | `@artifactuse/vue-panel` | 5179 | `/vue-panel/` | 🆓 |
 | Form / Wizard | `@artifactuse/form-panel` | 5180 | `/form-panel/` | 🆓 |
+
+## 📝 Technical Notes
+
+### JSON Artifact Sanitization
+
+When parsing `artifact.code` that contains JSON, panels automatically sanitize unescaped newlines inside string values. This handles cases where the code extractor doesn't properly escape literal newlines within JSON strings:
+
+```javascript
+// Sanitize: Fix unescaped newlines inside JSON string values
+code = code.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
+  return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+});
+
+const data = JSON.parse(code);
+```
+
+**Panels that use this sanitization:**
+- `form-panel` - parses form configuration
+- `json-panel` - parses JSON data to display
+- `diff-panel` - parses oldCode/newCode structure
+
+**Panels that don't need sanitization** (raw code, no JSON parsing):
+- `html-panel` - raw HTML/Markdown
+- `svg-panel` - raw SVG markup
+- `react-panel` - raw JSX code
+- `vue-panel` - raw Vue SFC code
+
+### Bridge Event Handler Pattern
+
+All panels should implement the `load:artifact` handler in their initialization:
+
+```javascript
+bridge = createBridge({ debug: import.meta.env?.DEV });
+
+// Primary: Handle artifact loading from SDK
+bridge.on('load:artifact', (artifact) => {
+  console.log('Loading artifact:', artifact);
+  
+  // Check language
+  if (artifact.language !== 'expected-language') {
+    console.warn('Unsupported artifact language:', artifact.language);
+    return;
+  }
+  
+  // For JSON-based artifacts: sanitize and parse
+  let code = artifact.code;
+  code = code.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
+    return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+  });
+  const data = JSON.parse(code);
+  
+  // Or for raw code artifacts: use directly
+  // const content = artifact.code;
+  
+  // Load the data
+  loadData(data);
+});
+
+// Legacy: Support older message formats
+bridge.on('setData', (data) => { loadData(data); });
+
+bridge.signalReady();
+```
 
 ## 📁 Structure
 
@@ -549,6 +786,22 @@ export default {
 5. Import shared styles in your component:
 ```javascript
 import '@artifactuse/shared/styles.css';
+```
+
+6. Implement artifact loading:
+```javascript
+import { createBridge } from '@artifactuse/shared/bridge';
+
+const bridge = createBridge({ debug: import.meta.env?.DEV });
+
+bridge.on('load:artifact', (artifact) => {
+  if (artifact.language !== 'my-language') return;
+  
+  // Handle artifact.code (parse JSON or use raw)
+  loadContent(artifact.code);
+});
+
+bridge.signalReady();
 ```
 
 ## 🔧 Tech Stack

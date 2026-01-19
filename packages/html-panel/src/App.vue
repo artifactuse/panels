@@ -121,32 +121,56 @@ function handleLinkClick(e) {
 let bridge = null;
 
 onMounted(() => {
-  bridge = createBridge({
-    onMessage: (msg) => {
-      if (msg.type === 'setCode' || msg.action === 'setContent') {
-        code.value = msg.data?.code || msg.data?.content || '';
-        language.value = msg.data?.language || 'html';
-      }
+  // Get URL params first
+  const params = new URLSearchParams(window.location.search);
+  const urlType = params.get('type');
+  if (urlType === 'md' || urlType === 'markdown') {
+    language.value = 'markdown';
+  }
+  
+  // Initialize bridge
+  bridge = createBridge({ debug: import.meta.env?.DEV });
+  
+  // Handle artifact loading
+  bridge.on('load:artifact', (artifact) => {
+    console.log('Loading artifact:', artifact);
+    
+    // Handle html and markdown artifacts
+    const lang = artifact.language?.toLowerCase();
+    if (lang !== 'html' && lang !== 'markdown' && lang !== 'md') {
+      console.warn('Unsupported artifact language:', artifact.language);
+      return;
     }
+    
+    // For HTML/Markdown, the code is the content directly (no JSON parsing needed)
+    code.value = artifact.code || '';
+    language.value = lang === 'md' ? 'markdown' : lang;
+    
+    console.log('HTML/Markdown artifact loaded:', language.value);
   });
-  bridge.send({ type: 'ready' });
+  
+  // Also support legacy setCode/setContent messages
+  bridge.on('setCode', (data) => {
+    code.value = data?.code || data?.content || '';
+    language.value = data?.language || 'html';
+  });
+  
+  bridge.signalReady();
   
   // Dev mode: load mock data if no data provided
-  if (!code.value && (import.meta.env?.DEV || window.location.hostname === 'localhost')) {
-    import('@artifactuse/shared').then((mod) => {
-      if (mod.getMockData) {
-        // Check URL for type hint
-        const params = new URLSearchParams(window.location.search);
-        const type = params.get('type') || 'html';
-        const mockContent = mod.getMockData(type === 'md' || type === 'markdown' ? 'markdown' : 'html');
-        if (mockContent) {
-          code.value = mockContent;
-          language.value = type === 'md' || type === 'markdown' ? 'markdown' : 'html';
-          console.log(`[HTML Preview] Loaded ${language.value} mock data for development`);
-        }
-      }
-    }).catch(() => {});
-  }
+  // if (!code.value && (import.meta.env?.DEV || window.location.hostname === 'localhost')) {
+  //   import('@artifactuse/shared').then((mod) => {
+  //     if (mod.getMockData) {
+  //       const type = params.get('type') || 'html';
+  //       const mockContent = mod.getMockData(type === 'md' || type === 'markdown' ? 'markdown' : 'html');
+  //       if (mockContent) {
+  //         code.value = mockContent;
+  //         language.value = type === 'md' || type === 'markdown' ? 'markdown' : 'html';
+  //         console.log(`[HTML Preview] Loaded ${language.value} mock data for development`);
+  //       }
+  //     }
+  //   }).catch(() => {});
+  // }
   
   // Handle link clicks
   document.addEventListener('click', handleLinkClick);

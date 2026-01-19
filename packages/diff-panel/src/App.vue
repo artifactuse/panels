@@ -303,26 +303,61 @@ onMounted(async () => {
   // Load Prism.js
   await loadPrism();
   
-  if (!oldCode.value && !newCode.value && (import.meta.env?.DEV || window.location.hostname === 'localhost')) {
-    import('@artifactuse/shared').then(mod => {
-      if (mod.getMockData) {
-        const mock = mod.getMockData('diff');
-        if (mock) {
-          oldCode.value = mock.oldCode;
-          newCode.value = mock.newCode;
-          if (mock.language) language.value = mock.language;
-          console.log('[Diff Viewer] Loaded mock data');
-        }
-      }
-    }).catch(() => {});
-  }
+  // if (!oldCode.value && !newCode.value && (import.meta.env?.DEV || window.location.hostname === 'localhost')) {
+  //   import('@artifactuse/shared').then(mod => {
+  //     if (mod.getMockData) {
+  //       const mock = mod.getMockData('diff');
+  //       if (mock) {
+  //         oldCode.value = mock.oldCode;
+  //         newCode.value = mock.newCode;
+  //         if (mock.language) language.value = mock.language;
+  //         console.log('[Diff Viewer] Loaded mock data');
+  //       }
+  //     }
+  //   }).catch(() => {});
+  // }
   
   bridge = createBridge({ debug: import.meta.env?.DEV });
+  
+  // Handle artifact loading
+  bridge.on('load:artifact', (artifact) => {
+    console.log('Loading artifact:', artifact);
+    
+    // Handle diff artifacts
+    const lang = artifact.language?.toLowerCase();
+    if (lang !== 'diff') {
+      console.warn('Unsupported artifact language:', artifact.language);
+      return;
+    }
+    
+    try {
+      // Diff artifacts have JSON with oldCode and newCode
+      // Sanitize: Fix unescaped newlines inside JSON string values
+      let code = artifact.code;
+      code = code.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
+        return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+      });
+      
+      const diffData = JSON.parse(code);
+      
+      if (diffData.oldCode) oldCode.value = diffData.oldCode;
+      if (diffData.newCode) newCode.value = diffData.newCode;
+      if (diffData.language) language.value = diffData.language;
+      
+      console.log('Diff artifact loaded');
+      
+    } catch (e) {
+      console.error('Failed to parse diff artifact:', e);
+    }
+  });
+  
+  // Legacy setDiff handler
   bridge.on('setDiff', (data) => {
     if (data.oldCode) oldCode.value = data.oldCode;
     if (data.newCode) newCode.value = data.newCode;
     if (data.language) language.value = data.language;
   });
+  
   bridge.on('setLanguage', (lang) => { language.value = lang; });
   bridge.on('setTheme', (t) => { currentTheme.value = typeof t === 'string' ? t : t.theme; });
   bridge.on('setAccent', (a) => { setAccentColor(a); currentAccent.value = a; });

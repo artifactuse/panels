@@ -29,13 +29,14 @@ export function createBridgeReceiver(options = {}) {
    */
   function handleMessage(event) {
     // Validate origin
+
     if (origin !== '*' && event.origin !== origin) {
       log('Ignored message from unauthorized origin:', event.origin);
       return;
     }
     
     const { data } = event;
-    
+  
     // Validate message format
     if (!data || data.type !== 'artifactuse') {
       return;

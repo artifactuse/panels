@@ -172,16 +172,35 @@ onMounted(() => {
   if (urlAccent) { setAccentColor(urlAccent); currentAccent.value = urlAccent; }
   if (params.get('svg')) rawSvg.value = decodeURIComponent(params.get('svg'));
   
-  if (!rawSvg.value && (import.meta.env?.DEV || window.location.hostname === 'localhost')) {
-    import('@artifactuse/shared').then(mod => {
-      if (mod.getMockData) {
-        rawSvg.value = mod.getMockData('svg');
-        console.log('[SVG Viewer] Loaded mock data');
-      }
-    }).catch(() => {});
-  }
+  // if (!rawSvg.value && (import.meta.env?.DEV || window.location.hostname === 'localhost')) {
+  //   import('@artifactuse/shared').then(mod => {
+  //     if (mod.getMockData) {
+  //       rawSvg.value = mod.getMockData('svg');
+  //       console.log('[SVG Viewer] Loaded mock data');
+  //     }
+  //   }).catch(() => {});
+  // }
   
   bridge = createBridge({ debug: import.meta.env?.DEV });
+  
+  // Handle artifact loading
+  bridge.on('load:artifact', (artifact) => {
+    console.log('Loading artifact:', artifact);
+    
+    // Handle svg artifacts
+    const lang = artifact.language?.toLowerCase();
+    if (lang !== 'svg') {
+      console.warn('Unsupported artifact language:', artifact.language);
+      return;
+    }
+    
+    // For SVG, the code is the SVG markup directly (no JSON parsing needed)
+    rawSvg.value = artifact.code || '';
+    
+    console.log('SVG artifact loaded');
+  });
+  
+  // Legacy setSvg handler
   bridge.on('setSvg', (data) => { rawSvg.value = data; });
   bridge.on('setTheme', (t) => { currentTheme.value = typeof t === 'string' ? t : t.theme; });
   bridge.on('setAccent', (a) => { setAccentColor(a); currentAccent.value = a; });

@@ -163,7 +163,6 @@ function init() {
   
   // Handle artifact loading
   bridge.on('load:artifact', (artifact) => {
-    console.log('Loading artifact:', artifact);
     
     // Handle react/jsx artifacts
     const lang = artifact.language?.toLowerCase();
@@ -174,14 +173,6 @@ function init() {
     
     // For React, the code is the JSX content directly (no JSON parsing needed)
     currentCode = artifact.code || '';
-    renderJsx(currentCode);
-    
-    console.log('React artifact loaded');
-  });
-  
-  // Also support legacy setCode/setContent messages
-  bridge.on('setCode', (data) => {
-    currentCode = data?.code || data?.content || '';
     renderJsx(currentCode);
   });
 

@@ -321,7 +321,6 @@ onMounted(async () => {
   
   // Handle artifact loading
   bridge.on('load:artifact', (artifact) => {
-    console.log('Loading artifact:', artifact);
     
     // Handle diff artifacts
     const lang = artifact.language?.toLowerCase();
@@ -344,23 +343,11 @@ onMounted(async () => {
       if (diffData.newCode) newCode.value = diffData.newCode;
       if (diffData.language) language.value = diffData.language;
       
-      console.log('Diff artifact loaded');
-      
     } catch (e) {
       console.error('Failed to parse diff artifact:', e);
     }
   });
   
-  // Legacy setDiff handler
-  bridge.on('setDiff', (data) => {
-    if (data.oldCode) oldCode.value = data.oldCode;
-    if (data.newCode) newCode.value = data.newCode;
-    if (data.language) language.value = data.language;
-  });
-  
-  bridge.on('setLanguage', (lang) => { language.value = lang; });
-  bridge.on('setTheme', (t) => { currentTheme.value = typeof t === 'string' ? t : t.theme; });
-  bridge.on('setAccent', (a) => { setAccentColor(a); currentAccent.value = a; });
   bridge.signalReady();
 });
 

@@ -213,7 +213,6 @@ function init() {
   
   // Handle artifact loading
   bridge.on('load:artifact', (artifact) => {
-    console.log('Loading artifact:', artifact);
     
     // Handle vue artifacts
     const lang = artifact.language?.toLowerCase();
@@ -224,14 +223,6 @@ function init() {
     
     // For Vue, the code is the SFC content directly (no JSON parsing needed)
     currentCode = artifact.code || '';
-    renderVue(currentCode);
-    
-    console.log('Vue artifact loaded');
-  });
-  
-  // Also support legacy setCode messages
-  bridge.on('setCode', (data) => {
-    currentCode = data?.code || '';
     renderVue(currentCode);
   });
   

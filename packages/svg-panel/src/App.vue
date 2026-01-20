@@ -185,7 +185,6 @@ onMounted(() => {
   
   // Handle artifact loading
   bridge.on('load:artifact', (artifact) => {
-    console.log('Loading artifact:', artifact);
     
     // Handle svg artifacts
     const lang = artifact.language?.toLowerCase();
@@ -197,13 +196,8 @@ onMounted(() => {
     // For SVG, the code is the SVG markup directly (no JSON parsing needed)
     rawSvg.value = artifact.code || '';
     
-    console.log('SVG artifact loaded');
   });
   
-  // Legacy setSvg handler
-  bridge.on('setSvg', (data) => { rawSvg.value = data; });
-  bridge.on('setTheme', (t) => { currentTheme.value = typeof t === 'string' ? t : t.theme; });
-  bridge.on('setAccent', (a) => { setAccentColor(a); currentAccent.value = a; });
   bridge.signalReady();
 });
 

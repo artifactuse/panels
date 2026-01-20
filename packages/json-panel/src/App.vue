@@ -214,7 +214,6 @@ onMounted(() => {
   
   // Handle artifact loading
   bridge.on('load:artifact', (artifact) => {
-    console.log('Loading artifact:', artifact);
     
     // Handle json artifacts
     const lang = artifact.language?.toLowerCase();
@@ -232,14 +231,8 @@ onMounted(() => {
     
     rawJson.value = code;
     parseJson(code);
-    
-    console.log('JSON artifact loaded');
   });
   
-  // Legacy setJson handler
-  bridge.on('setJson', (data) => { rawJson.value = data; parseJson(data); });
-  bridge.on('setTheme', (t) => { currentTheme.value = typeof t === 'string' ? t : t.theme; });
-  bridge.on('setAccent', (a) => { setAccentColor(a); currentAccent.value = a; });
   bridge.signalReady();
 });
 

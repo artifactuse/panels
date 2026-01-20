@@ -301,7 +301,6 @@ onMounted(() => {
 
   // Handle artifact loading
   bridge.on('load:artifact', (artifact) => {
-    console.log('Loading artifact:', artifact);
     
     // Only handle form artifacts
     if (artifact.language !== 'form' && artifact.type !== 'form') {
@@ -321,17 +320,12 @@ onMounted(() => {
       // Load the form data
       loadFormData(formConfig);
       
-      console.log('Form artifact loaded successfully');
-      
     } catch (e) {
       console.error('Failed to parse form artifact:', e);
     }
   });
-  
-  bridge.on('setData', loadFormData);
-  bridge.on('setTheme', (t) => { currentTheme.value = typeof t === 'string' ? t : t.theme; });
-  bridge.on('setAccent', applyAccent);
-  bridge.on('reset', () => {
+
+  bridge.on('form:reset', () => {
     formValues.value = { ...initialValues.value };
     submitSuccess.value = false;
     formFieldsRef.value?.reset?.();

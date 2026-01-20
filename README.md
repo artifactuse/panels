@@ -186,40 +186,6 @@ Interactive form panel with multiple variants, field types, and validation.
 }
 ```
 
-**Legacy Usage:**
-```javascript
-// Form data structure
-const formData = {
-  type: 'form',
-  id: 'contact-form',
-  variant: 'fields',  // 'fields' | 'wizard' | 'buttons'
-  title: 'Contact Us',
-  description: 'Fill out the form below',
-  submitLabel: 'Send',
-  cancelLabel: 'Cancel',
-  data: {
-    layout: 'vertical',  // 'vertical' | 'horizontal' | 'grid'
-    fields: [
-      { name: 'name', type: 'text', label: 'Name', required: true },
-      { name: 'email', type: 'email', label: 'Email', required: true },
-      { name: 'message', type: 'textarea', label: 'Message', rows: 4 }
-    ]
-  }
-};
-
-// Send to panel
-iframe.contentWindow.postMessage({
-  type: 'setData',
-  data: formData
-}, '*');
-
-// Listen for form submission
-window.addEventListener('message', (e) => {
-  if (e.data.action === 'form:submit') {
-    console.log('Form values:', e.data.data.values);
-  }
-});
-```
 
 ### @artifactuse/json-panel
 
@@ -239,13 +205,6 @@ Interactive JSON tree viewer with Tailwind CSS.
 // artifact.code = the JSON string to display
 ```
 
-**Legacy Usage:**
-```javascript
-iframe.contentWindow.postMessage({
-  type: 'setJson',
-  data: '{"key": "value"}'
-}, '*');
-```
 
 ### @artifactuse/svg-panel
 
@@ -266,13 +225,6 @@ SVG preview with pan, zoom, and export.
 // artifact.code = raw SVG markup
 ```
 
-**Legacy Usage:**
-```javascript
-iframe.contentWindow.postMessage({
-  type: 'setSvg',
-  data: '<svg>...</svg>'
-}, '*');
-```
 
 ### @artifactuse/diff-panel
 
@@ -298,16 +250,6 @@ Side-by-side and unified diff comparison.
 }
 ```
 
-**Legacy Usage:**
-```javascript
-iframe.contentWindow.postMessage({
-  type: 'setDiff',
-  data: {
-    oldCode: 'original text',
-    newCode: 'modified text'
-  }
-}, '*');
-```
 
 ### @artifactuse/html-panel
 
@@ -327,17 +269,6 @@ HTML and Markdown preview.
 // artifact.code = raw HTML or Markdown content
 ```
 
-**Legacy Usage:**
-```javascript
-iframe.contentWindow.postMessage({
-  type: 'setCode',
-  data: {
-    code: '<h1>Hello World</h1>',
-    language: 'html'  // or 'markdown'
-  }
-}, '*');
-```
-
 ### @artifactuse/react-panel
 
 React/JSX preview with live rendering.
@@ -354,17 +285,6 @@ React/JSX preview with live rendering.
 // SDK automatically sends this when opening a React artifact
 // artifact.language = 'react' | 'jsx'
 // artifact.code = raw JSX/React code
-```
-
-**Legacy Usage:**
-```javascript
-iframe.contentWindow.postMessage({
-  type: 'setCode',
-  data: {
-    code: 'function App() { return <h1>Hello</h1>; }',
-    language: 'react'
-  }
-}, '*');
 ```
 
 ### @artifactuse/vue-panel
@@ -386,13 +306,6 @@ Vue SFC preview with live rendering.
 // artifact.code = raw Vue SFC code
 ```
 
-**Legacy Usage:**
-```javascript
-iframe.contentWindow.postMessage({
-  type: 'setCode',
-  data: '<template><h1>Hello</h1></template>'
-}, '*');
-```
 
 ### @artifactuse/shared
 
@@ -484,30 +397,6 @@ When the SDK opens a panel artifact, it sends a `load:artifact` message via the 
 | `react-panel` | `react`, `jsx` | Raw JSX/React code | ❌ No |
 | `vue-panel` | `vue` | Raw Vue SFC code | ❌ No |
 
-### Legacy Messages (Parent → Panel)
-
-These messages are still supported for backwards compatibility:
-
-```javascript
-// Set content
-iframe.contentWindow.postMessage({
-  type: 'setData',  // or setJson, setSvg, setDiff, setCode
-  data: { ... }
-}, '*');
-
-// Set theme
-iframe.contentWindow.postMessage({
-  type: 'setTheme',
-  data: 'light'
-}, '*');
-
-// Set accent color
-iframe.contentWindow.postMessage({
-  type: 'setAccent',
-  data: '#ff6432'
-}, '*');
-```
-
 ### Panel → Parent
 
 ```javascript
@@ -571,16 +460,6 @@ setAccentColor('rgb(255, 100, 50)');
 setAccentColor('255 100 50');
 ```
 
-### Via Bridge Message
-
-```javascript
-// Set theme
-bridge.send('setTheme', 'light');  // or 'dark'
-
-// Set accent color (any supported format)
-bridge.send('setAccent', '#ff6432');
-bridge.send('setAccent', 'purple');
-```
 
 ### CSS Variables
 
@@ -680,9 +559,6 @@ bridge.on('load:artifact', (artifact) => {
   // Load the data
   loadData(data);
 });
-
-// Legacy: Support older message formats
-bridge.on('setData', (data) => { loadData(data); });
 
 bridge.signalReady();
 ```

@@ -133,7 +133,6 @@ onMounted(() => {
   
   // Handle artifact loading
   bridge.on('load:artifact', (artifact) => {
-    console.log('Loading artifact:', artifact);
     
     // Handle html and markdown artifacts
     const lang = artifact.language?.toLowerCase();
@@ -145,15 +144,8 @@ onMounted(() => {
     // For HTML/Markdown, the code is the content directly (no JSON parsing needed)
     code.value = artifact.code || '';
     language.value = lang === 'md' ? 'markdown' : lang;
-    
-    console.log('HTML/Markdown artifact loaded:', language.value);
   });
   
-  // Also support legacy setCode/setContent messages
-  bridge.on('setCode', (data) => {
-    code.value = data?.code || data?.content || '';
-    language.value = data?.language || 'html';
-  });
   
   bridge.signalReady();
   

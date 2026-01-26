@@ -1,7 +1,7 @@
 // React Preview Panel
 // Renders JSX code directly in the panel (no iframe needed)
 
-import { createBridge } from '@artifactuse/shared/bridge';
+import { createBridge, setupArtifactListeners } from '@artifactuse/shared';
 
 const rootElement = document.getElementById('root');
 let currentCode = '';
@@ -161,19 +161,16 @@ function init() {
   // Set up bridge communication
   bridge = createBridge({ debug: window.location.hostname === 'localhost' });
   
-  // Handle artifact loading
-  bridge.on('load:artifact', (artifact) => {
-    
-    // Handle react/jsx artifacts
-    const lang = artifact.language?.toLowerCase();
-    if (lang !== 'react' && lang !== 'jsx') {
-      console.warn('Unsupported artifact language:', artifact.language);
-      return;
-    }
-    
-    // For React, the code is the JSX content directly (no JSON parsing needed)
-    currentCode = artifact.code || '';
-    renderJsx(currentCode);
+  setupArtifactListeners({
+    type: 'react',
+    acceptedLanguages: ['react', 'jsx'],
+    bridge,
+    onArtifact: (artifact) => {
+      // Raw JSX code - no parsing needed
+      currentCode = artifact.code || '';
+      renderJsx(currentCode);
+      return true;
+    },
   });
 
   bridge.signalReady();

@@ -93,7 +93,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, shallowRef } from 'vue';
-import { createBridge } from '@artifactuse/shared/bridge';
+import { createBridge, setupArtifactListeners } from '@artifactuse/shared';
 import { setAccentColor } from '@artifactuse/shared/theme';
 import '@artifactuse/shared/styles.css';
 
@@ -319,33 +319,27 @@ onMounted(async () => {
   
   bridge = createBridge({ debug: import.meta.env?.DEV });
   
-  // Handle artifact loading
-  bridge.on('load:artifact', (artifact) => {
-    
-    // Handle diff artifacts
-    const lang = artifact.language?.toLowerCase();
-    if (lang !== 'diff') {
-      console.warn('Unsupported artifact language:', artifact.language);
-      return;
-    }
-    
-    try {
-      // Diff artifacts have JSON with oldCode and newCode
-      // Sanitize: Fix unescaped newlines inside JSON string values
-      let code = artifact.code;
-      code = code.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
-        return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-      });
-      
-      const diffData = JSON.parse(code);
-      
-      if (diffData.oldCode) oldCode.value = diffData.oldCode;
-      if (diffData.newCode) newCode.value = diffData.newCode;
-      if (diffData.language) language.value = diffData.language;
-      
-    } catch (e) {
-      console.error('Failed to parse diff artifact:', e);
-    }
+  setupArtifactListeners({
+    type: 'diff',
+    bridge,
+    onArtifact: (artifact) => {
+      // artifact.code is sanitized, parse it
+      try {
+        const diffData = JSON.parse(artifact.code);
+        
+        if (diffData.oldCode) oldCode.value = diffData.oldCode;
+        if (diffData.newCode) newCode.value = diffData.newCode;
+        if (diffData.language) language.value = diffData.language;
+        
+        return true;
+      } catch (e) {
+        console.error('Failed to parse diff artifact:', e);
+        return false;
+      }
+    },
+    onError: (error) => {
+      console.error('Diff artifact error:', error);
+    },
   });
   
   bridge.signalReady();

@@ -1391,32 +1391,235 @@ defineExpose({ validate });
 }
 
 /* ========================================
-   Light Theme Adjustments
+   Light Theme Adjustments (Complete)
    ======================================== */
-:global(.light) .field-label {
+
+/* Labels */
+.light .field-label {
   color: var(--color-txt-secondary, #52525b);
 }
 
-:global(.light) .field-input,
-:global(.light) .field-textarea,
-:global(.light) .field-select {
-  background: var(--color-panel-surface, rgba(0, 0, 0, 0.02));
+.light .field-wrapper.is-focused .field-label {
+  color: var(--accent, #3b82f6);
 }
 
-:global(.light) .checkbox-wrapper,
-:global(.light) .toggle-wrapper,
-:global(.light) .radio-option,
-:global(.light) .multiselect-option,
-:global(.light) .file-dropzone,
-:global(.light) .file-item {
-  background: var(--color-panel-surface, rgba(0, 0, 0, 0.02));
+/* Inputs */
+.light .field-input,
+.light .field-textarea,
+.light .field-select {
+  color: var(--color-txt, #18181b);
+  background: var(--color-panel-surface, rgba(0, 0, 0, 0.03));
 }
 
-:global(.light) .checkbox-wrapper:hover,
-:global(.light) .toggle-wrapper:hover,
-:global(.light) .radio-option:hover,
-:global(.light) .multiselect-option:hover,
-:global(.light) .file-dropzone:hover {
-  background: var(--color-panel-hover, rgba(0, 0, 0, 0.04));
+.light .field-input::placeholder,
+.light .field-textarea::placeholder {
+  color: var(--color-txt-muted, #a1a1aa);
+}
+
+/* Input icons */
+.light .input-icon {
+  color: var(--color-txt-muted, #a1a1aa);
+}
+
+.light .input-suffix-btn {
+  color: var(--color-txt-muted, #a1a1aa);
+}
+
+.light .input-suffix-btn:hover {
+  color: var(--color-txt, #18181b);
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.05));
+}
+
+/* Select arrow */
+.light .select-arrow {
+  color: var(--color-txt-muted, #a1a1aa);
+}
+
+/* Textarea counter */
+.light .textarea-counter {
+  color: var(--color-txt-muted, #a1a1aa);
+}
+
+/* Checkbox & Toggle */
+.light .checkbox-wrapper,
+.light .toggle-wrapper {
+  background: var(--color-panel-surface, rgba(0, 0, 0, 0.03));
+}
+
+.light .checkbox-wrapper:hover,
+.light .toggle-wrapper:hover {
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.05));
+}
+
+.light .checkbox-box {
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.05));
+  border-color: var(--color-line, rgba(0, 0, 0, 0.15));
+}
+
+.light .checkbox-box.is-checked {
+  background: var(--accent, #60a5fa);
+  border-color: var(--accent, #60a5fa);
+}
+
+.light .checkbox-label,
+.light .toggle-label {
+  color: var(--color-txt, #18181b);
+}
+
+.light .checkbox-description,
+.light .toggle-description {
+  color: var(--color-txt-muted, #71717a);
+}
+
+.light .toggle-track {
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.15));
+}
+
+/* Radio */
+.light .radio-option {
+  background: var(--color-panel-surface, rgba(0, 0, 0, 0.03));
+  border-color: transparent;
+}
+
+.light .radio-option:hover {
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.05));
+  border-color: var(--color-line, rgba(0, 0, 0, 0.1));
+}
+
+.light .radio-option.is-selected {
+  background: rgba(var(--accent-rgb, 59, 130, 246), 0.08);
+  border-color: var(--accent, #3b82f6);
+}
+
+.light .radio-indicator {
+  border-color: var(--color-line, rgba(0, 0, 0, 0.2));
+}
+
+.light .radio-label {
+  color: var(--color-txt, #18181b);
+}
+
+.light .radio-description {
+  color: var(--color-txt-muted, #71717a);
+}
+
+/* Multiselect */
+.light .multiselect-option {
+  background: var(--color-panel-surface, rgba(0, 0, 0, 0.03));
+}
+
+.light .multiselect-option:hover {
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.05));
+  border-color: var(--color-line, rgba(0, 0, 0, 0.1));
+}
+
+.light .multiselect-option.is-selected {
+  background: rgba(var(--accent-rgb, 59, 130, 246), 0.08);
+  border-color: var(--accent, #3b82f6);
+}
+
+.light .option-check {
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.05));
+  border-color: var(--color-line, rgba(0, 0, 0, 0.15));
+}
+
+.light .option-label {
+  color: var(--color-txt, #18181b);
+}
+
+.light .option-description {
+  color: var(--color-txt-muted, #71717a);
+}
+
+/* Range slider */
+.light .range-header {
+  color: var(--color-txt-muted, #71717a);
+}
+
+.light .range-track {
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.1));
+}
+
+/* Rating */
+.light .rating-star {
+  color: var(--color-panel-hover, rgba(0, 0, 0, 0.15));
+}
+
+.light .rating-label {
+  color: var(--color-txt-secondary, #71717a);
+}
+
+/* File upload */
+.light .file-dropzone {
+  background: var(--color-panel-surface, rgba(0, 0, 0, 0.03));
+  border-color: var(--color-line, rgba(0, 0, 0, 0.15));
+}
+
+.light .file-dropzone:hover,
+.light .file-dropzone.is-dragover {
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.05));
+}
+
+.light .file-icon {
+  color: var(--color-txt-muted, #a1a1aa);
+}
+
+.light .file-title {
+  color: var(--color-txt, #18181b);
+}
+
+.light .file-hint {
+  color: var(--color-txt-muted, #71717a);
+}
+
+.light .file-item {
+  background: var(--color-panel-surface, rgba(0, 0, 0, 0.03));
+}
+
+.light .file-item-icon {
+  color: var(--color-txt-muted, #71717a);
+}
+
+.light .file-item-name {
+  color: var(--color-txt, #18181b);
+}
+
+.light .file-item-size {
+  color: var(--color-txt-muted, #71717a);
+}
+
+.light .file-item-remove {
+  color: var(--color-txt-muted, #71717a);
+}
+
+/* Color picker */
+.light .color-hex {
+  color: var(--color-txt, #18181b);
+}
+
+/* Help & Error text */
+.light .field-help {
+  color: var(--color-txt-muted, #71717a);
+}
+
+/* Buttons */
+.light .field-button--secondary {
+  background: var(--color-panel-surface, rgba(0, 0, 0, 0.05));
+  color: var(--color-txt, #18181b);
+  border-color: var(--color-line, rgba(0, 0, 0, 0.1));
+}
+
+.light .field-button--secondary:hover:not(:disabled) {
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.08));
+  border-color: var(--color-line-hover, rgba(0, 0, 0, 0.2));
+}
+
+.light .field-button--ghost {
+  color: var(--color-txt-secondary, #71717a);
+}
+
+.light .field-button--ghost:hover:not(:disabled) {
+  background: var(--color-panel-hover, rgba(0, 0, 0, 0.05));
+  color: var(--color-txt, #18181b);
 }
 </style>

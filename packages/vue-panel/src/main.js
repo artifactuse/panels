@@ -1,7 +1,7 @@
 // Vue Preview Panel
 // Renders Vue SFC code directly in the panel (no iframe needed)
 
-import { createBridge } from '@artifactuse/shared/bridge';
+import { createBridge, setupArtifactListeners } from '@artifactuse/shared';
 
 const appElement = document.getElementById('app');
 let currentCode = '';
@@ -211,19 +211,15 @@ function init() {
   // Set up bridge communication
   bridge = createBridge({ debug: window.location.hostname === 'localhost' });
   
-  // Handle artifact loading
-  bridge.on('load:artifact', (artifact) => {
-    
-    // Handle vue artifacts
-    const lang = artifact.language?.toLowerCase();
-    if (lang !== 'vue') {
-      console.warn('Unsupported artifact language:', artifact.language);
-      return;
-    }
-    
-    // For Vue, the code is the SFC content directly (no JSON parsing needed)
-    currentCode = artifact.code || '';
-    renderVue(currentCode);
+  setupArtifactListeners({
+    type: 'vue',
+    bridge,
+    onArtifact: (artifact) => {
+      // Raw SFC code - no parsing needed
+      currentCode = artifact.code || '';
+      renderVue(currentCode);
+      return true;
+    },
   });
   
   bridge.signalReady();

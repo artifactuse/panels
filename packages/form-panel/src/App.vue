@@ -105,7 +105,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
-import { createBridge } from '@artifactuse/shared/bridge';
+import { createBridge, setupArtifactListeners } from '@artifactuse/shared';
 import { setAccentColor } from '@artifactuse/shared/theme';
 import FormFields from './components/FormFields.vue';
 import FormWizard from './components/FormWizard.vue';
@@ -299,30 +299,23 @@ onMounted(() => {
   
   bridge = createBridge({ debug: import.meta.env?.DEV });
 
-  // Handle artifact loading
-  bridge.on('load:artifact', (artifact) => {
-    
-    // Only handle form artifacts
-    if (artifact.language !== 'form' && artifact.type !== 'form') {
-      console.warn('Unsupported artifact type:', artifact.language || artifact.type);
-      return;
-    }
-    
-    try {
-      // Sanitize: Fix unescaped newlines inside JSON string values
-      let code = artifact.code;
-      code = code.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
-        return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-      });
-      
-      const formConfig = JSON.parse(code);
-      
-      // Load the form data
-      loadFormData(formConfig);
-      
-    } catch (e) {
-      console.error('Failed to parse form artifact:', e);
-    }
+  setupArtifactListeners({
+    type: 'form',
+    bridge,
+    onArtifact: (artifact) => {
+      // artifact.code is sanitized, parse it
+      try {
+        const formConfig = JSON.parse(artifact.code);
+        loadFormData(formConfig);
+        return true;
+      } catch (e) {
+        console.error('Failed to parse form artifact:', e);
+        return false;
+      }
+    },
+    onError: (error) => {
+      console.error('Form artifact error:', error);
+    },
   });
 
   bridge.on('form:reset', () => {

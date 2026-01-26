@@ -53,7 +53,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { createBridge } from '@artifactuse/shared/bridge';
+import { createBridge, setupArtifactListeners } from '@artifactuse/shared';
 import { setAccentColor } from '@artifactuse/shared/theme';
 import JsonNode from './components/JsonNode.vue';
 import '@artifactuse/shared/styles.css';
@@ -211,26 +211,16 @@ onMounted(() => {
   if (rawJson.value) parseJson(rawJson.value);
   
   bridge = createBridge({ debug: import.meta.env?.DEV });
-  
-  // Handle artifact loading
-  bridge.on('load:artifact', (artifact) => {
-    
-    // Handle json artifacts
-    const lang = artifact.language?.toLowerCase();
-    if (lang !== 'json') {
-      console.warn('Unsupported artifact language:', artifact.language);
-      return;
-    }
-    
-    // For JSON viewer, the code IS the JSON to display
-    // We need to sanitize newlines inside string values before parsing
-    let code = artifact.code || '';
-    code = code.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
-      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-    });
-    
-    rawJson.value = code;
-    parseJson(code);
+
+  setupArtifactListeners({
+    type: 'json',
+    bridge,
+    onArtifact: (artifact) => {
+      // artifact.code is already sanitized by handler
+      rawJson.value = artifact.code;
+      parseJson(artifact.code);
+      return true;
+    },
   });
   
   bridge.signalReady();

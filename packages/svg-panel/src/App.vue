@@ -72,7 +72,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { createBridge } from '@artifactuse/shared/bridge';
+import { createBridge, setupArtifactListeners } from '@artifactuse/shared';
 import { setAccentColor } from '@artifactuse/shared/theme';
 import '@artifactuse/shared/styles.css';
 
@@ -183,19 +183,14 @@ onMounted(() => {
   
   bridge = createBridge({ debug: import.meta.env?.DEV });
   
-  // Handle artifact loading
-  bridge.on('load:artifact', (artifact) => {
-    
-    // Handle svg artifacts
-    const lang = artifact.language?.toLowerCase();
-    if (lang !== 'svg') {
-      console.warn('Unsupported artifact language:', artifact.language);
-      return;
-    }
-    
-    // For SVG, the code is the SVG markup directly (no JSON parsing needed)
-    rawSvg.value = artifact.code || '';
-    
+  setupArtifactListeners({
+    type: 'svg',
+    bridge,
+    onArtifact: (artifact) => {
+      // Raw SVG markup - no parsing needed
+      rawSvg.value = artifact.code || '';
+      return true;
+    },
   });
   
   bridge.signalReady();

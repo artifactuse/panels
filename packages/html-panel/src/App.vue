@@ -1,16 +1,25 @@
 <template>
-  <div class="preview-container" :class="{ 'markdown-mode': isMarkdown }">
+  <div class="preview-container" :class="{ 'markdown-mode': isMarkdown, 'iframe-mode': !isMarkdown }">
     <div v-if="error" class="error">
       <div class="error-title">Preview Error</div>
       <pre>{{ error }}</pre>
     </div>
-    <div v-else class="content" v-html="renderedHtml"></div>
+
+   <iframe
+      v-else-if="iframeSrc"
+      :key="iframeKey"
+      :src="iframeSrc"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
+    ></iframe>
+
+    <div v-else class="loading">Loading...</div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
-import { createBridge } from '@artifactuse/shared/bridge';
+import { createBridge, setupArtifactListeners } from '@artifactuse/shared';
 
 const props = defineProps({
   code: { type: String, default: '' },
@@ -20,11 +29,14 @@ const props = defineProps({
 const code = ref(props.code);
 const language = ref(props.language);
 const error = ref(null);
+const iframeKey = ref(0);
+const iframeSrc = ref('');
 
 const isMarkdown = computed(() => {
   const lang = language.value.toLowerCase();
   return lang === 'markdown' || lang === 'md';
 });
+
 
 // Simple markdown parser
 function parseMarkdown(md) {
@@ -88,25 +100,6 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-// Render content
-const renderedHtml = computed(() => {
-  try {
-    error.value = null;
-    const content = code.value;
-    
-    if (!content) return '';
-    
-    if (isMarkdown.value) {
-      return parseMarkdown(content);
-    }
-    
-    // HTML - return as-is (sanitization should happen at SDK level)
-    return content;
-  } catch (e) {
-    error.value = e.message;
-    return '';
-  }
-});
 
 // Handle link clicks - open in new tab
 function handleLinkClick(e) {
@@ -116,6 +109,62 @@ function handleLinkClick(e) {
     window.open(link.href, '_blank', 'noopener,noreferrer');
   }
 }
+
+
+// Process content and create blob URL
+function updateIframeSrc(content) {
+  iframeKey.value++;
+
+  if (!content) {
+    iframeSrc.value = '';
+    return;
+  }
+
+  // Revoke previous blob URL to prevent memory leak
+  if (iframeSrc.value && iframeSrc.value.startsWith('blob:')) {
+    URL.revokeObjectURL(iframeSrc.value);
+  }
+
+  try {
+    error.value = null;
+    
+    let html = content;
+    
+    // If markdown, convert to HTML with wrapper
+    if (isMarkdown.value) {
+      const parsedContent = parseMarkdown(content);
+      html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      padding: 24px;
+      max-width: 800px;
+      margin: 0 auto;
+      color: #333;
+    }
+    /* Add your markdown styles here */
+  </style>
+</head>
+<body>${parsedContent}</body>
+</html>`;
+    }
+
+    // Create blob URL
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    iframeSrc.value = URL.createObjectURL(blob);
+    
+  } catch (e) {
+    console.error('Failed to create iframe content:', e);
+    error.value = e.message;
+    iframeSrc.value = '';
+  }
+}
+
 
 // Bridge for parent communication
 let bridge = null;
@@ -130,22 +179,18 @@ onMounted(() => {
   
   // Initialize bridge
   bridge = createBridge({ debug: import.meta.env?.DEV });
-  
-  // Handle artifact loading
-  bridge.on('load:artifact', (artifact) => {
-    
-    // Handle html and markdown artifacts
-    const lang = artifact.language?.toLowerCase();
-    if (lang !== 'html' && lang !== 'markdown' && lang !== 'md') {
-      console.warn('Unsupported artifact language:', artifact.language);
-      return;
-    }
-    
-    // For HTML/Markdown, the code is the content directly (no JSON parsing needed)
-    code.value = artifact.code || '';
-    language.value = lang === 'md' ? 'markdown' : lang;
+
+  setupArtifactListeners({
+    type: 'html',
+    acceptedLanguages: ['html', 'htm', 'markdown', 'md'],  // Also accepts markdown
+    bridge,
+    onArtifact: (artifact, lang, displayName) => {
+      // Raw code - no parsing needed
+      code.value = artifact.code || '';
+      language.value = lang === 'md' ? 'markdown' : lang;
+      return true;
+    },
   });
-  
   
   bridge.signalReady();
   
@@ -169,12 +214,27 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+   if (iframeSrc.value && iframeSrc.value.startsWith('blob:')) {
+    URL.revokeObjectURL(iframeSrc.value);
+  }
   document.removeEventListener('click', handleLinkClick);
   bridge?.destroy();
 });
 
 watch(() => props.code, (v) => { code.value = v; });
 watch(() => props.language, (v) => { language.value = v; });
+
+
+// Watch for code changes
+watch(code, (newCode) => {
+  updateIframeSrc(newCode);
+}, { immediate: true });
+
+// Also watch language changes (in case switching between html/markdown)
+watch(isMarkdown, () => {
+  updateIframeSrc(code.value);
+});
+
 </script>
 
 <style>
@@ -183,6 +243,7 @@ watch(() => props.language, (v) => { language.value = v; });
   margin: 0;
   padding: 0;
 }
+
 
 .preview-container {
   width: 100%;
@@ -199,6 +260,18 @@ watch(() => props.language, (v) => { language.value = v; });
   max-width: 800px;
   margin: 0 auto;
   padding: 24px;
+}
+
+.preview-container.iframe-mode {
+  padding: 0;
+  min-height: 100vh;
+}
+ 
+.iframe-mode iframe {
+  width: 100%;
+  height: 100vh;
+  border: none;
+  display: block;
 }
 
 .content {

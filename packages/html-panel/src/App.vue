@@ -12,7 +12,10 @@
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
     ></iframe>
 
-    <div v-else class="loading">Loading...</div>
+    <!-- Loading spinner -->
+    <div v-else class="loading">
+      <div class="spinner"></div>
+    </div>
 
   </div>
 </template>
@@ -244,6 +247,42 @@ watch(isMarkdown, () => {
   padding: 0;
 }
 
+@keyframes artifactuse-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading spinner */
+.loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(249, 250, 251, 0.85);
+  z-index: 5;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(17, 24, 39, 0.1);
+  border-top-color: rgb(99, 102, 241);
+  border-radius: 50%;
+  animation: artifactuse-spin 0.8s linear infinite;
+}
+
+/* .loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #666;
+} */
 
 .preview-container {
   width: 100%;

@@ -104,15 +104,75 @@ function escapeHtml(str) {
 }
 
 
-// Handle link clicks - open in new tab
+// Handle link clicks in the panel itself - navigate top
 function handleLinkClick(e) {
   const link = e.target.closest('a');
   if (link && link.href && !link.href.startsWith('javascript:')) {
     e.preventDefault();
-    window.open(link.href, '_blank', 'noopener,noreferrer');
+    window.top.location.href = link.href;
   }
 }
 
+// Handle navigation requests from the sandboxed blob iframe via postMessage
+function handleNavigateMessage(e) {
+  if (e.data && e.data.type === 'artifactuse:navigate' && e.data.url) {
+    window.top.location.href = e.data.url;
+  }
+}
+
+
+// Script injected into blob iframe to intercept link clicks and programmatic navigations
+// Sends the URL to the parent panel via postMessage (the panel then navigates top)
+const LINK_INTERCEPT_SCRIPT = `<script>
+(function() {
+  function nav(url) {
+    window.parent.postMessage({ type: 'artifactuse:navigate', url: url }, '*');
+  }
+
+  // 1. Intercept <a> clicks
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest ? e.target.closest('a') : null;
+    if (!a) return;
+    var href = a.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+    e.preventDefault();
+    nav(a.href);
+  });
+
+  // 2. Intercept programmatic navigation (location.href=, location.assign, etc.)
+  //    Navigation API (Chrome/Edge 102+) catches location.href setter
+  if (window.navigation) {
+    window.navigation.addEventListener('navigate', function(e) {
+      if (e.hashChange || !e.destination.url || e.destination.url.startsWith('blob:')) return;
+      e.preventDefault();
+      nav(e.destination.url);
+    });
+  }
+
+  // 3. Override location.assign / location.replace (all browsers)
+  location.assign = function(url) { nav(new URL(url, location.href).href); };
+  location.replace = function(url) { nav(new URL(url, location.href).href); };
+
+  // 4. Intercept window.open
+  var _open = window.open;
+  window.open = function(url) {
+    if (url) { nav(new URL(url, location.href).href); }
+    return null;
+  };
+})();
+<\/script>`;
+
+// Inject the link-interception script into HTML content
+function injectLinkScript(html) {
+  // Try to inject before </body> or </html>, otherwise append
+  if (/<\/body>/i.test(html)) {
+    return html.replace(/<\/body>/i, LINK_INTERCEPT_SCRIPT + '</body>');
+  }
+  if (/<\/html>/i.test(html)) {
+    return html.replace(/<\/html>/i, LINK_INTERCEPT_SCRIPT + '</html>');
+  }
+  return html + LINK_INTERCEPT_SCRIPT;
+}
 
 // Process content and create blob URL
 function updateIframeSrc(content) {
@@ -130,9 +190,9 @@ function updateIframeSrc(content) {
 
   try {
     error.value = null;
-    
+
     let html = content;
-    
+
     // If markdown, convert to HTML with wrapper
     if (isMarkdown.value) {
       const parsedContent = parseMarkdown(content);
@@ -153,14 +213,17 @@ function updateIframeSrc(content) {
     /* Add your markdown styles here */
   </style>
 </head>
-<body>${parsedContent}</body>
+<body>${parsedContent}${LINK_INTERCEPT_SCRIPT}</body>
 </html>`;
+    } else {
+      // Raw HTML — inject the script
+      html = injectLinkScript(html);
     }
 
     // Create blob URL
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     iframeSrc.value = URL.createObjectURL(blob);
-    
+
   } catch (e) {
     console.error('Failed to create iframe content:', e);
     error.value = e.message;
@@ -212,8 +275,11 @@ onMounted(() => {
   //   }).catch(() => {});
   // }
   
-  // Handle link clicks
+  // Handle link clicks (for any links in the panel itself)
   document.addEventListener('click', handleLinkClick);
+
+  // Handle navigation requests from the blob iframe
+  window.addEventListener('message', handleNavigateMessage);
 });
 
 onUnmounted(() => {
@@ -221,6 +287,7 @@ onUnmounted(() => {
     URL.revokeObjectURL(iframeSrc.value);
   }
   document.removeEventListener('click', handleLinkClick);
+  window.removeEventListener('message', handleNavigateMessage);
   bridge?.destroy();
 });
 

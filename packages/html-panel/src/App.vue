@@ -10,6 +10,7 @@
       :key="iframeKey"
       :src="iframeSrc"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
+      allow="camera; microphone; fullscreen; geolocation; display-capture; autoplay; clipboard-write"
     ></iframe>
 
     <!-- Loading spinner -->

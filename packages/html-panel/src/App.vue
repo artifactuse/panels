@@ -11,6 +11,7 @@
       :src="iframeSrc"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
       allow="camera; microphone; fullscreen; geolocation; display-capture; autoplay; clipboard-write"
+      @error="handleIframeError"
     ></iframe>
 
     <!-- Loading spinner -->
@@ -104,6 +105,12 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+
+// Handle iframe load error (e.g. blob URL revoked, memory pressure)
+function handleIframeError() {
+  error.value = 'Failed to load preview content';
+  iframeSrc.value = '';
+}
 
 // Handle link clicks in the panel itself - navigate top
 function handleLinkClick(e) {
@@ -366,7 +373,14 @@ watch(isMarkdown, () => {
 .preview-container.markdown-mode {
   max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
+  /* padding: 24px; */
+  padding: 0px;
+}
+
+.preview-container.markdown-mode iframe {
+  width: 100%;
+  border: none;
+  height: 100vh;
 }
 
 .preview-container.iframe-mode {

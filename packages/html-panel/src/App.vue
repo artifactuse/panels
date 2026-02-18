@@ -24,7 +24,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
+import { marked } from 'marked';
 import { createBridge, setupArtifactListeners } from '@artifactuse/shared';
+
+// Configure marked for GFM (tables, strikethrough, task lists)
+marked.use({ gfm: true, breaks: true });
 
 const props = defineProps({
   code: { type: String, default: '' },
@@ -41,69 +45,6 @@ const isMarkdown = computed(() => {
   const lang = language.value.toLowerCase();
   return lang === 'markdown' || lang === 'md';
 });
-
-
-// Simple markdown parser
-function parseMarkdown(md) {
-  let html = md
-    // Code blocks (must come before inline code)
-    .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-      return '<pre><code class="language-' + lang + '">' + escapeHtml(code.trim()) + '</code></pre>';
-    })
-    // Headers
-    .replace(/^######\s+(.*)$/gm, '<h6>$1</h6>')
-    .replace(/^#####\s+(.*)$/gm, '<h5>$1</h5>')
-    .replace(/^####\s+(.*)$/gm, '<h4>$1</h4>')
-    .replace(/^###\s+(.*)$/gm, '<h3>$1</h3>')
-    .replace(/^##\s+(.*)$/gm, '<h2>$1</h2>')
-    .replace(/^#\s+(.*)$/gm, '<h1>$1</h1>')
-    // Bold and italic
-    .replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/___([^_]+)___/g, '<strong><em>$1</em></strong>')
-    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-    .replace(/_([^_]+)_/g, '<em>$1</em>')
-    // Inline code
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // Links and images
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-    // Blockquotes
-    .replace(/^>\s+(.*)$/gm, '<blockquote>$1</blockquote>')
-    // Horizontal rules
-    .replace(/^(?:---|\*\*\*|___)\s*$/gm, '<hr />')
-    // Unordered lists
-    .replace(/^\s*[-*+]\s+(.*)$/gm, '<li>$1</li>')
-    // Ordered lists
-    .replace(/^\s*\d+\.\s+(.*)$/gm, '<li>$1</li>')
-    // Paragraphs - wrap non-tag lines
-    .replace(/\n\n+/g, '\n</p><p>\n')
-    // Line breaks
-    .replace(/\n/g, '<br />');
-  
-  // Wrap consecutive <li> in <ul>
-  html = html.replace(/(<li>.*?<\/li>)(\s*<br \/>)*/gs, (match) => {
-    return '<ul>' + match.replace(/<br \/>/g, '') + '</ul>';
-  });
-  
-  // Merge consecutive blockquotes
-  html = html.replace(/(<\/blockquote>)\s*(<blockquote>)/g, '<br />');
-  
-  // Clean up empty paragraphs
-  html = html.replace(/<p>\s*<\/p>/g, '');
-  
-  return '<p>' + html + '</p>';
-}
-
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
 
 
 // Handle iframe load error (e.g. blob URL revoked, memory pressure)
@@ -203,7 +144,7 @@ function updateIframeSrc(content) {
 
     // If markdown, convert to HTML with wrapper
     if (isMarkdown.value) {
-      const parsedContent = parseMarkdown(content);
+      const parsedContent = marked.parse(content);
       html = `<!DOCTYPE html>
 <html>
 <head>

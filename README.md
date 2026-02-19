@@ -4,19 +4,18 @@ Panel artifacts for the Artifactuse SDK. These are standalone apps that run insi
 
 ## 📊 Overview
 
-| Package | Description | Tier |
-|---------|-------------|------|
-| `@artifactuse/json-panel` | Interactive JSON tree viewer | 🆓 Free |
-| `@artifactuse/svg-panel` | SVG preview with pan/zoom | 🆓 Free |
-| `@artifactuse/diff-panel` | Side-by-side diff comparison | 🆓 Free |
-| `@artifactuse/html-panel` | HTML + Markdown preview | 🆓 Free |
-| `@artifactuse/react-panel` | React/JSX preview | 🆓 Free |
-| `@artifactuse/vue-panel` | Vue SFC preview | 🆓 Free |
-| `@artifactuse/form-panel` | Interactive forms, wizards, file uploads | 🆓 Free |
-| `@artifactuse/editor-panel` | Canvas + Video editor | ⭐ Pro |
-| `@artifactuse/code-panel` | JS + Python code execution | ⭐ Pro |
-
-> **Note:** Pro panels require a [Pro subscription](https://artifactuse.com/pricing) when using the hosted CDN. Self-hosters have access to all panels.
+| Package | Description |
+|---------|-------------|
+| `@artifactuse/json-panel` | Interactive JSON tree viewer |
+| `@artifactuse/svg-panel` | SVG preview with pan/zoom |
+| `@artifactuse/diff-panel` | Side-by-side diff comparison |
+| `@artifactuse/html-panel` | HTML + Markdown preview |
+| `@artifactuse/react-panel` | React/JSX preview |
+| `@artifactuse/vue-panel` | Vue SFC preview |
+| `@artifactuse/form-panel` | Interactive forms, wizards, file uploads |
+| `@artifactuse/sheet-panel` | CSV/TSV spreadsheet viewer & editor |
+| `@artifactuse/editor-panel` | Canvas + Video editor |
+| `@artifactuse/code-panel` | JS + Python code execution |
 
 ## 🚀 Getting Started
 
@@ -35,6 +34,7 @@ npm run dev:html       # port 5177
 npm run dev:react      # port 5178
 npm run dev:vue        # port 5179
 npm run dev:form       # port 5180
+npm run dev:sheet      # port 5182
 
 # Build all
 npm run build
@@ -47,6 +47,7 @@ npm run build:html
 npm run build:react
 npm run build:vue
 npm run build:form
+npm run build:sheet
 ```
 
 ## 📤 Deployment
@@ -122,7 +123,8 @@ https://your-cdn-url/
 ├── html-panel/      # HTML Preview
 ├── react-panel/     # React Preview
 ├── vue-panel/       # Vue Preview
-└── form-panel/      # Form Panel
+├── form-panel/      # Form Panel
+└── sheet-panel/     # CSV/TSV Spreadsheet
 ```
 
 ### Configure SDK
@@ -307,6 +309,27 @@ Vue SFC preview with live rendering.
 ```
 
 
+### @artifactuse/sheet-panel
+
+CSV/TSV spreadsheet viewer and editor powered by jspreadsheet-ce.
+
+**Features:**
+- Auto-detects delimiters (comma, tab, pipe, semicolon)
+- Interactive cell editing with auto-save
+- Column sorting, resize, and drag
+- Row insert/delete via right-click menu
+- Copy/paste support
+- Dark/light theme
+- Sends edited CSV back to SDK via `edit:save`
+
+**Artifact Loading:**
+```javascript
+// SDK automatically sends this when opening a CSV/TSV artifact
+// artifact.language = 'csv' | 'tsv'
+// artifact.code = raw CSV or TSV content
+```
+
+
 ### @artifactuse/shared
 
 Shared utilities for all panel packages.
@@ -396,6 +419,7 @@ When the SDK opens a panel artifact, it sends a `load:artifact` message via the 
 | `html-panel` | `html`, `markdown`, `md` | Raw HTML or Markdown | ❌ No |
 | `react-panel` | `react`, `jsx` | Raw JSX/React code | ❌ No |
 | `vue-panel` | `vue` | Raw Vue SFC code | ❌ No |
+| `sheet-panel` | `csv`, `tsv` | Raw CSV/TSV content | ❌ No |
 
 ### Panel → Parent
 
@@ -493,15 +517,16 @@ The theme system uses CSS variables that you can override:
 
 ## 🎨 Content Type Routing
 
-| Content Type | Package | Dev Port | CDN Path | Tier |
-|--------------|---------|----------|----------|------|
-| JSON | `@artifactuse/json-panel` | 5173 | `/json-panel/` | 🆓 |
-| SVG | `@artifactuse/svg-panel` | 5174 | `/svg-panel/` | 🆓 |
-| Diff / Patch | `@artifactuse/diff-panel` | 5175 | `/diff-panel/` | 🆓 |
-| HTML / Markdown | `@artifactuse/html-panel` | 5177 | `/html-panel/` | 🆓 |
-| React / JSX | `@artifactuse/react-panel` | 5178 | `/react-panel/` | 🆓 |
-| Vue SFC | `@artifactuse/vue-panel` | 5179 | `/vue-panel/` | 🆓 |
-| Form / Wizard | `@artifactuse/form-panel` | 5180 | `/form-panel/` | 🆓 |
+| Content Type | Package | Dev Port | CDN Path |
+|--------------|---------|----------|----------|
+| JSON | `@artifactuse/json-panel` | 5173 | `/json-panel/` |
+| SVG | `@artifactuse/svg-panel` | 5174 | `/svg-panel/` |
+| Diff / Patch | `@artifactuse/diff-panel` | 5175 | `/diff-panel/` |
+| HTML / Markdown | `@artifactuse/html-panel` | 5177 | `/html-panel/` |
+| React / JSX | `@artifactuse/react-panel` | 5178 | `/react-panel/` |
+| Vue SFC | `@artifactuse/vue-panel` | 5179 | `/vue-panel/` |
+| Form / Wizard | `@artifactuse/form-panel` | 5180 | `/form-panel/` |
+| CSV / TSV | `@artifactuse/sheet-panel` | 5182 | `/sheet-panel/` |
 
 ## 📝 Technical Notes
 
@@ -528,6 +553,7 @@ const data = JSON.parse(code);
 - `svg-panel` - raw SVG markup
 - `react-panel` - raw JSX code
 - `vue-panel` - raw Vue SFC code
+- `sheet-panel` - raw CSV/TSV content
 
 ### Bridge Event Handler Pattern
 
@@ -568,13 +594,14 @@ bridge.signalReady();
 ```
 artifactuse-panels/
 ├── packages/
-│   ├── json-panel/          # JSON tree viewer         🆓
-│   ├── svg-panel/           # SVG viewer               🆓
-│   ├── diff-panel/          # Diff viewer              🆓
-│   ├── html-panel/          # HTML + Markdown preview  🆓
-│   ├── react-panel/         # React/JSX preview        🆓
-│   ├── vue-panel/           # Vue SFC preview          🆓
-│   ├── form-panel/          # Forms, wizards           🆓
+│   ├── json-panel/          # JSON tree viewer
+│   ├── svg-panel/           # SVG viewer
+│   ├── diff-panel/          # Diff viewer
+│   ├── html-panel/          # HTML + Markdown preview
+│   ├── react-panel/         # React/JSX preview
+│   ├── vue-panel/           # Vue SFC preview
+│   ├── form-panel/          # Forms, wizards
+│   ├── sheet-panel/         # CSV/TSV spreadsheet
 │   └── shared/              # Bridge + theme utilities
 │
 ├── worker/                  # Cloudflare Worker

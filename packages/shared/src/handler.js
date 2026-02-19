@@ -81,6 +81,8 @@ const LANGUAGE_MAP = {
   
   // Data formats
   json: 'JSON',
+  csv: 'CSV',
+  tsv: 'TSV',
   xml: 'XML',
   yaml: 'YAML',
   yml: 'YAML',
@@ -126,6 +128,7 @@ const RAW_CODE_LANGUAGES = [
   'ruby', 'rb', 'php', 'swift', 'kotlin', 'scala', 'sql',
   'bash', 'shell', 'sh', 'powershell', 'ps1', 'graphql',
   'dockerfile', 'docker', 'patch',
+  'csv', 'tsv',
 ];
 
 /**
@@ -136,7 +139,7 @@ const LANGUAGE_CATEGORIES = {
   structured: ['form', 'social', 'diff'],
   renderable: ['react', 'jsx', 'tsx', 'vue', 'html', 'htm', 'svg'],
   runtime: ['javascript', 'js', 'typescript', 'ts', 'python', 'py'],
-  data: ['json', 'xml', 'yaml', 'yml'],
+  data: ['json', 'xml', 'yaml', 'yml', 'csv', 'tsv'],
   markup: ['markdown', 'md'],
   code: [
     'css', 'java', 'csharp', 'cs', 'cpp', 'c', 'go', 'rust',

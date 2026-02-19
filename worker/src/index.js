@@ -14,7 +14,10 @@ const PANELS = {
   'html-panel': 'HTML + Markdown preview',
   'react-panel': 'React/JSX preview',
   'vue-panel': 'Vue SFC preview',
-  'form-panel': 'Interactive forms'
+  'form-panel': 'Interactive forms',
+  'sheet-panel': 'CSV/TSV spreadsheet viewer',
+  'code-panel': 'JS + Python execution',
+  'editor-panel': 'Canvas & Video editor'
 };
 
 const CACHE_DURATIONS = {
@@ -67,10 +70,13 @@ export default {
     
     // SPA fallback - serve index.html for panel routes without extension
     if (!response.ok && !path.includes('.')) {
-      const panelName = path.split('/').filter(Boolean)[0];
+      const pathParts = path.split('/').filter(Boolean);
+      const panelName = pathParts[0];
       if (PANELS[panelName]) {
+        // editor-panel has subpaths (canvas/, video/) with their own index.html
+        const subPath = pathParts.length > 1 ? pathParts.slice(0, 2).join('/') : panelName;
         const indexUrl = new URL(request.url);
-        indexUrl.pathname = `/${panelName}/index.html`;
+        indexUrl.pathname = `/${subPath}/index.html`;
         const indexResponse = await env.ASSETS.fetch(new Request(indexUrl, request));
         if (indexResponse.ok) {
           return addHeaders(indexResponse, 'html');

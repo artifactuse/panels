@@ -20,6 +20,8 @@ const PANELS = [
 	'vue-panel',
 	'form-panel',
 	'sheet-panel',
+	'code-panel',
+	'editor-panel',
 ];
 
 // Clean and recreate worker/dist

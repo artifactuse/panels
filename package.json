@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
+    "dev:editor": "npm run dev --workspace=@artifactuse/editor-panel",
+    "dev:code": "npm run dev --workspace=@artifactuse/code-panel",
     "dev:json": "npm run dev --workspace=@artifactuse/json-panel",
     "dev:svg": "npm run dev --workspace=@artifactuse/svg-panel",
     "dev:diff": "npm run dev --workspace=@artifactuse/diff-panel",
@@ -18,6 +20,8 @@
     "dev:form": "npm run dev --workspace=@artifactuse/form-panel",
     "dev:sheet": "npm run dev --workspace=@artifactuse/sheet-panel",
     "build": "turbo run build",
+    "build:editor": "turbo run build --filter=@artifactuse/editor-panel",
+    "build:code": "turbo run build --filter=@artifactuse/code-panel",
     "build:json": "turbo run build --filter=@artifactuse/json-panel",
     "build:svg": "turbo run build --filter=@artifactuse/svg-panel",
     "build:diff": "turbo run build --filter=@artifactuse/diff-panel",

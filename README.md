@@ -2,6 +2,8 @@
 
 Panel artifacts for the Artifactuse SDK. These are standalone apps that run inside iframes and communicate with the parent SDK via postMessage.
 
+**[Live Demo](https://demo.artifactuse.com)**
+
 ## 📊 Overview
 
 | Package | Description |
@@ -30,10 +32,12 @@ npm run dev
 npm run dev:json       # port 5173
 npm run dev:svg        # port 5174
 npm run dev:diff       # port 5175
+npm run dev:code       # port 5176
 npm run dev:html       # port 5177
 npm run dev:react      # port 5178
 npm run dev:vue        # port 5179
 npm run dev:form       # port 5180
+npm run dev:editor     # port 5181 (canvas + video)
 npm run dev:sheet      # port 5182
 
 # Build all
@@ -43,11 +47,13 @@ npm run build
 npm run build:json
 npm run build:svg
 npm run build:diff
+npm run build:code
 npm run build:html
 npm run build:react
 npm run build:vue
 npm run build:form
 npm run build:sheet
+npm run build:editor
 ```
 
 ## 📤 Deployment
@@ -56,7 +62,7 @@ npm run build:sheet
 
 Deploy to Cloudflare's edge network for low-latency global delivery.
 
-#### Quick Start
+#### Quick Start (Self-Host)
 
 ```bash
 # Install Wrangler CLI
@@ -65,7 +71,7 @@ npm install -g wrangler
 # Login to Cloudflare
 wrangler login
 
-# Deploy
+# Deploy (all panels, no restrictions)
 npm run deploy:cf
 ```
 
@@ -77,6 +83,7 @@ That's it! Your panels are now live on Cloudflare's edge network.
 npm run deploy:cf              # Deploy to production
 npm run deploy:cf:staging      # Deploy to staging
 npm run cf:dev                 # Local development server
+npm run cf:tail                # Stream live logs
 ```
 
 #### Custom Domain
@@ -92,6 +99,14 @@ routes = [
 ```
 
 3. Deploy: `npm run deploy:cf`
+
+#### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENVIRONMENT` | `development` | `development`, `staging`, or `production` |
+| `DOCS_URL` | `https://artifactuse.com/docs` | Your documentation URL |
+| `DASHBOARD_URL` | `https://artifactuse.com/dashboard` | Your dashboard URL |
 
 ---
 
@@ -124,7 +139,9 @@ https://your-cdn-url/
 ├── react-panel/     # React Preview
 ├── vue-panel/       # Vue Preview
 ├── form-panel/      # Form Panel
-└── sheet-panel/     # CSV/TSV Spreadsheet
+├── sheet-panel/     # CSV/TSV Spreadsheet
+├── code-panel/      # Code Runtime (JS/Python)
+└── editor-panel/    # Canvas + Video Editor
 ```
 
 ### Configure SDK
@@ -188,7 +205,6 @@ Interactive form panel with multiple variants, field types, and validation.
 }
 ```
 
-
 ### @artifactuse/json-panel
 
 Interactive JSON tree viewer with Tailwind CSS.
@@ -226,7 +242,6 @@ SVG preview with pan, zoom, and export.
 // artifact.language = 'svg'
 // artifact.code = raw SVG markup
 ```
-
 
 ### @artifactuse/diff-panel
 
@@ -271,6 +286,7 @@ HTML and Markdown preview.
 // artifact.code = raw HTML or Markdown content
 ```
 
+
 ### @artifactuse/react-panel
 
 React/JSX preview with live rendering.
@@ -288,6 +304,7 @@ React/JSX preview with live rendering.
 // artifact.language = 'react' | 'jsx'
 // artifact.code = raw JSX/React code
 ```
+
 
 ### @artifactuse/vue-panel
 
@@ -307,7 +324,6 @@ Vue SFC preview with live rendering.
 // artifact.language = 'vue'
 // artifact.code = raw Vue SFC code
 ```
-
 
 ### @artifactuse/sheet-panel
 
@@ -329,6 +345,59 @@ CSV/TSV spreadsheet viewer and editor powered by jspreadsheet-ce.
 // artifact.code = raw CSV or TSV content
 ```
 
+### @artifactuse/code-panel
+
+JavaScript and Python code execution sandbox.
+
+**Features:**
+- JavaScript execution with console capture
+- Python execution via Pyodide (WebAssembly)
+- Execution time display
+- Ctrl/Cmd+Enter to run
+- Theme customization
+
+**Artifact Loading:**
+```javascript
+// SDK automatically sends this when opening a code artifact
+// artifact.language = 'javascript' | 'typescript' | 'js' | 'ts' | 'sandbox'
+// artifact.code = raw code to execute
+```
+
+### @artifactuse/editor-panel
+
+Full-featured canvas and video editor.
+
+**Canvas Mode Features:**
+- Drawing tools (rect, circle, line, arrow, freehand, text)
+- Shape manipulation (resize, rotate, group)
+- Frames with children
+- Image and video embedding
+- Layers panel
+- Snap guides
+- Export to PNG, SVG, JSON
+
+**Video Mode Features:**
+- Timeline with tracks
+- Audio waveforms
+- Clip trimming
+- Effects and filters
+- FFmpeg export
+
+**Artifact Loading:**
+```javascript
+// SDK automatically sends this when opening a canvas/video artifact
+// artifact.language = 'canvas' | 'video'
+// artifact.code = JSON string with canvas data
+{
+  "width": 1200,
+  "height": 800,
+  "backgroundColor": "#ffffff",
+  "shapes": [
+    { "type": "rect", "x": 100, "y": 100, "width": 200, "height": 150, "fillColor": "#6c5ce7" },
+    { "type": "text", "x": 150, "y": 300, "text": "Hello World", "fontSize": 24 }
+  ]
+}
+```
 
 ### @artifactuse/shared
 
@@ -397,7 +466,7 @@ When the SDK opens a panel artifact, it sends a `load:artifact` message via the 
     id: 'artifact-id',
     messageId: 'message-id',
     type: 'code',              // or 'form'
-    language: 'json',          // panel-specific language identifier
+    language: 'canvas',        // panel-specific language identifier
     title: 'Artifact Title',
     code: '...',               // The artifact content (JSON string or raw code)
     isInline: false,
@@ -412,6 +481,8 @@ When the SDK opens a panel artifact, it sends a `load:artifact` message via the 
 
 | Panel | Language Values | Code Format | Needs JSON Parse |
 |-------|-----------------|-------------|------------------|
+| `editor-panel` (canvas) | `canvas` | JSON: `{width, height, backgroundColor, shapes}` | ✅ Yes |
+| `editor-panel` (video) | `video`, `canvas` | JSON: same as canvas | ✅ Yes |
 | `form-panel` | `form` | JSON: form configuration | ✅ Yes |
 | `json-panel` | `json` | JSON: the data to display | ✅ Yes |
 | `diff-panel` | `diff` | JSON: `{oldCode, newCode, language}` | ✅ Yes |
@@ -420,6 +491,31 @@ When the SDK opens a panel artifact, it sends a `load:artifact` message via the 
 | `react-panel` | `react`, `jsx` | Raw JSX/React code | ❌ No |
 | `vue-panel` | `vue` | Raw Vue SFC code | ❌ No |
 | `sheet-panel` | `csv`, `tsv` | Raw CSV/TSV content | ❌ No |
+| `code-panel` | `javascript`, `typescript`, `js`, `ts`, `sandbox` | Raw code | ❌ No |
+
+### Legacy Messages (Parent → Panel)
+
+These messages are still supported for backwards compatibility:
+
+```javascript
+// Set content
+iframe.contentWindow.postMessage({
+  type: 'setData',  // or setJson, setSvg, setDiff, setCode
+  data: { ... }
+}, '*');
+
+// Set theme
+iframe.contentWindow.postMessage({
+  type: 'setTheme',
+  data: 'light'
+}, '*');
+
+// Set accent color
+iframe.contentWindow.postMessage({
+  type: 'setAccent',
+  data: '#ff6432'
+}, '*');
+```
 
 ### Panel → Parent
 
@@ -439,6 +535,13 @@ When the SDK opens a panel artifact, it sends a `load:artifact` message via the 
   type: 'artifactuse',
   action: 'form:cancel', 
   data: { formId, action, timestamp } 
+}
+
+// Artifact updated (editor panels)
+{
+  type: 'artifactuse',
+  action: 'artifact:update',
+  data: { ... }
 }
 ```
 
@@ -522,11 +625,14 @@ The theme system uses CSS variables that you can override:
 | JSON | `@artifactuse/json-panel` | 5173 | `/json-panel/` |
 | SVG | `@artifactuse/svg-panel` | 5174 | `/svg-panel/` |
 | Diff / Patch | `@artifactuse/diff-panel` | 5175 | `/diff-panel/` |
+| JavaScript / Python | `@artifactuse/code-panel` | 5176 | `/code-panel/` |
 | HTML / Markdown | `@artifactuse/html-panel` | 5177 | `/html-panel/` |
 | React / JSX | `@artifactuse/react-panel` | 5178 | `/react-panel/` |
 | Vue SFC | `@artifactuse/vue-panel` | 5179 | `/vue-panel/` |
 | Form / Wizard | `@artifactuse/form-panel` | 5180 | `/form-panel/` |
 | CSV / TSV | `@artifactuse/sheet-panel` | 5182 | `/sheet-panel/` |
+| Canvas / Whiteboard | `@artifactuse/editor-panel` | 5181 | `/editor-panel/canvas/` |
+| Video / Timeline | `@artifactuse/editor-panel` | 5181 | `/editor-panel/video/` |
 
 ## 📝 Technical Notes
 
@@ -544,6 +650,7 @@ const data = JSON.parse(code);
 ```
 
 **Panels that use this sanitization:**
+- `editor-panel` (canvas/video) - parses shape data
 - `form-panel` - parses form configuration
 - `json-panel` - parses JSON data to display
 - `diff-panel` - parses oldCode/newCode structure
@@ -554,6 +661,7 @@ const data = JSON.parse(code);
 - `react-panel` - raw JSX code
 - `vue-panel` - raw Vue SFC code
 - `sheet-panel` - raw CSV/TSV content
+- `code-panel` - raw JavaScript/Python code
 
 ### Bridge Event Handler Pattern
 
@@ -602,11 +710,14 @@ artifactuse-panels/
 │   ├── vue-panel/           # Vue SFC preview
 │   ├── form-panel/          # Forms, wizards
 │   ├── sheet-panel/         # CSV/TSV spreadsheet
+│   ├── code-panel/          # JS + Python runtime
+│   ├── editor-panel/        # Canvas + Video editor
 │   └── shared/              # Bridge + theme utilities
 │
 ├── worker/                  # Cloudflare Worker
 │   ├── src/index.js
-│   └── wrangler.toml
+│   ├── wrangler.toml
+│   └── scripts/
 │
 ├── scripts/
 │   ├── deploy.sh            # AWS S3/CloudFront deployment
@@ -714,6 +825,8 @@ bridge.signalReady();
 - **Styling**: Tailwind CSS 3.4
 - **Monorepo**: npm workspaces + Turborepo
 - **Hosting**: Cloudflare Workers / AWS S3 + CloudFront
+- **Editor**: Paper.js, vis-timeline, Peaks.js, FFmpeg.wasm
+- **Sandbox**: Pyodide (Python WebAssembly)
 
 ## 📄 License
 

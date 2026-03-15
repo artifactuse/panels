@@ -69,6 +69,13 @@ function handleNavigateMessage(e) {
   }
 }
 
+// Handle console messages from the sandboxed blob iframe and relay to SDK via bridge
+function handleConsoleMessage(e) {
+  if (e.data && e.data.type === 'artifactuse:console' && e.data.entry) {
+    if (bridge) bridge.send('console:log', { entry: e.data.entry });
+  }
+}
+
 
 // Script injected into blob iframe to intercept link clicks and programmatic navigations
 // Sends the URL to the parent panel via postMessage (the panel then navigates top)
@@ -110,6 +117,64 @@ const LINK_INTERCEPT_SCRIPT = `<script>
   };
 })();
 <\/script>`;
+
+// Script injected into blob iframe to capture console output and runtime errors
+// Sends entries to the parent panel via postMessage (the panel relays to SDK via bridge)
+const CONSOLE_CAPTURE_SCRIPT = `<script>
+(function() {
+  var MAX_ENTRIES = 200;
+  var count = 0;
+
+  function serialize(args) {
+    return Array.prototype.slice.call(args).map(function(a) {
+      if (a === null) return 'null';
+      if (a === undefined) return 'undefined';
+      if (typeof a === 'object') {
+        try { return JSON.stringify(a, null, 2); }
+        catch(e) { return String(a); }
+      }
+      return String(a);
+    }).join(' ');
+  }
+
+  function send(type, content, stack) {
+    if (count >= MAX_ENTRIES) return;
+    count++;
+    var entry = { type: type, content: content, timestamp: Date.now() };
+    if (stack) entry.stack = stack;
+    window.parent.postMessage({ type: 'artifactuse:console', entry: entry }, '*');
+  }
+
+  var _log = console.log, _warn = console.warn, _error = console.error, _info = console.info;
+  console.log = function() { send('log', serialize(arguments)); _log.apply(console, arguments); };
+  console.warn = function() { send('warn', serialize(arguments)); _warn.apply(console, arguments); };
+  console.error = function() { send('error', serialize(arguments)); _error.apply(console, arguments); };
+  console.info = function() { send('info', serialize(arguments)); _info.apply(console, arguments); };
+
+  window.onerror = function(msg, src, line, col, err) {
+    var stack = err && err.stack ? err.stack : (src + ':' + line + ':' + col);
+    send('error', String(msg), stack);
+  };
+
+  window.addEventListener('unhandledrejection', function(e) {
+    var r = e.reason;
+    var content = r instanceof Error ? r.message : String(r);
+    var stack = r instanceof Error ? r.stack : undefined;
+    send('error', 'Unhandled Promise Rejection: ' + content, stack);
+  });
+})();
+<\/script>`;
+
+// Inject the console capture script into <head> for early capture
+function injectConsoleScript(html) {
+  if (/<head[^>]*>/i.test(html)) {
+    return html.replace(/<head[^>]*>/i, '$&' + CONSOLE_CAPTURE_SCRIPT);
+  }
+  if (/<html[^>]*>/i.test(html)) {
+    return html.replace(/<html[^>]*>/i, '$&<head>' + CONSOLE_CAPTURE_SCRIPT + '</head>');
+  }
+  return CONSOLE_CAPTURE_SCRIPT + html;
+}
 
 // Inject the link-interception script into HTML content
 function injectLinkScript(html) {
@@ -161,11 +226,13 @@ function updateIframeSrc(content) {
     }
     /* Add your markdown styles here */
   </style>
+${CONSOLE_CAPTURE_SCRIPT}
 </head>
 <body>${parsedContent}${LINK_INTERCEPT_SCRIPT}</body>
 </html>`;
     } else {
-      // Raw HTML — inject the script
+      // Raw HTML — inject scripts
+      html = injectConsoleScript(html);
       html = injectLinkScript(html);
     }
 
@@ -229,6 +296,9 @@ onMounted(() => {
 
   // Handle navigation requests from the blob iframe
   window.addEventListener('message', handleNavigateMessage);
+
+  // Handle console messages from the blob iframe
+  window.addEventListener('message', handleConsoleMessage);
 });
 
 onUnmounted(() => {
@@ -237,6 +307,7 @@ onUnmounted(() => {
   }
   document.removeEventListener('click', handleLinkClick);
   window.removeEventListener('message', handleNavigateMessage);
+  window.removeEventListener('message', handleConsoleMessage);
   bridge?.destroy();
 });
 

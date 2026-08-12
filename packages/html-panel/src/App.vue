@@ -33,7 +33,6 @@ import {
   setupArtifactListeners,
   applyTheme,
   detectTheme,
-  onThemeChange,
 } from '@artifactuse/shared';
 import { parseColor } from '@artifactuse/shared/theme';
 
@@ -301,7 +300,7 @@ function buildMarkdownStyles(themeName) {
     }
 
     h1, h2, h3, h4, h5, h6 {
-      margin-top: 1.5em;
+      margin-top: 0.5em;
       margin-bottom: 0.5em;
       font-weight: 600;
       line-height: 1.3;
@@ -412,6 +411,25 @@ ${CONSOLE_CAPTURE_SCRIPT}
 // Bridge for parent communication
 let bridge = null;
 
+// ?accent= from the panel URL, re-applied on every theme change
+let accentOverride = null;
+
+// OS theme listener, only registered when the host hasn't pinned a theme
+let systemThemeQuery = null;
+let handleSystemTheme = null;
+
+// Single path for adopting a theme, so the chrome and the markdown blob always
+// agree. PANEL_COLORS is spread last so it wins over whatever palette the
+// caller (or the SDK's pushed colors) would otherwise supply.
+function applyPanelTheme(name) {
+  const next = name === 'light' ? 'light' : 'dark';
+  theme.value = next;
+  applyTheme(next, {
+    ...PANEL_COLORS[next],
+    ...(accentOverride ? { primary: accentOverride } : {}),
+  });
+}
+
 // Content arrived — stop waiting, and cancel the pending timeout so a late
 // firing can't flip the panel into the "no content" state
 function markArtifactReceived() {
@@ -433,12 +451,9 @@ onMounted(() => {
 
   // Theme: ?theme= → prefers-color-scheme → 'dark'. The SDK always sends
   // ?theme= and ?accent= on the panel URL.
-  theme.value = detectTheme();
   const accent = parseColor(params.get('accent'));
-  applyTheme(theme.value, {
-    ...PANEL_COLORS[theme.value],
-    ...(accent ? { primary: accent.replace(/ /g, ', ') } : {}),
-  });
+  accentOverride = accent ? accent.replace(/ /g, ', ') : null;
+  applyPanelTheme(detectTheme());
 
   // Initialize bridge
   bridge = createBridge({ debug: import.meta.env?.DEV });
@@ -463,13 +478,19 @@ onMounted(() => {
     if (!hasArtifact.value) waitedTooLong.value = true;
   }, ARTIFACT_WAIT_MS);
 
-  // Follow OS theme changes only when the host hasn't pinned one via ?theme=,
-  // otherwise an OS flip would silently override the SDK. (The bridge half of
-  // onThemeChange is inert until the SDK emits 'theme:change'.)
+  // The SDK pushes this on setTheme(). It's the only live channel: its CSS
+  // variables don't cross the iframe boundary, and the URL's ?theme= is fixed
+  // at mount, so without this the panel keeps its original theme until reload.
+  bridge.on('theme:change', (data) => {
+    if (data?.theme) applyPanelTheme(data.theme);
+  });
+
+  // Follow OS changes only when the host hasn't pinned a theme via ?theme=,
+  // otherwise an OS flip would silently override the SDK.
   if (!params.get('theme')) {
-    onThemeChange((next) => {
-      theme.value = next;
-    }, bridge);
+    systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    handleSystemTheme = (e) => applyPanelTheme(e.matches ? 'dark' : 'light');
+    systemThemeQuery.addEventListener('change', handleSystemTheme);
   }
 
   bridge.signalReady();
@@ -506,6 +527,11 @@ onUnmounted(() => {
   if (waitTimer) {
     clearTimeout(waitTimer);
     waitTimer = null;
+  }
+  if (systemThemeQuery && handleSystemTheme) {
+    systemThemeQuery.removeEventListener('change', handleSystemTheme);
+    systemThemeQuery = null;
+    handleSystemTheme = null;
   }
   document.removeEventListener('click', handleLinkClick);
   window.removeEventListener('message', handleNavigateMessage);

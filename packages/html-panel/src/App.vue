@@ -646,7 +646,6 @@ watch(theme, () => {
 }
 
 .preview-container.markdown-mode {
-  max-width: 800px;
   margin: 0 auto;
   /* padding: 24px; */
   padding: 0px;
